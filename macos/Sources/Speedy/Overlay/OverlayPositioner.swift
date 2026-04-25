@@ -38,12 +38,16 @@ enum OverlayPositioner {
 
         // Final clamp — covers the case where the cursor itself is near a
         // corner and even after flipping the panel would still spill out.
+        // For oversized panels (panel larger than the screen on either axis),
+        // `max < min` so the normal clamp would produce a negative origin;
+        // pin to the bottom-left edge instead so we always return something
+        // inside the screen.
         let minX = screenFrame.minX + edgePadding
         let maxX = screenFrame.maxX - panelSize.width - edgePadding
         let minY = screenFrame.minY + edgePadding
         let maxY = screenFrame.maxY - panelSize.height - edgePadding
-        x = min(max(x, minX), maxX)
-        y = min(max(y, minY), maxY)
+        x = minX <= maxX ? min(max(x, minX), maxX) : minX
+        y = minY <= maxY ? min(max(y, minY), maxY) : minY
 
         return CGPoint(x: x, y: y)
     }
