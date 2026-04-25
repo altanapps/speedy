@@ -11,6 +11,7 @@ Pre-MVP. PRD drafted, web mock built, no production code yet.
 ## Layout
 
 - [`PRD.md`](./PRD.md) — full product spec (overview, architecture, MVP scope, risks).
+- [`DESIGN.md`](./DESIGN.md) — visual + interaction design schema (tokens, components, motion).
 - [`mock/index.html`](./mock/index.html) — interactive web mock of the cursor-attached overlay. Open in a browser, highlight any underlined phrase, or press `E` for a page-level market.
 
 ## Open decisions
