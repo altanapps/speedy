@@ -1,0 +1,32 @@
+name: Speedy
+
+options:
+  bundleIdPrefix: tech.nuff
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    ENABLE_HARDENED_RUNTIME: YES
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "-"
+
+targets:
+  Speedy:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/Speedy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: tech.nuff.speedy
+        PRODUCT_NAME: Speedy
+        INFOPLIST_FILE: Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Resources/Speedy.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"

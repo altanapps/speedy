@@ -7,15 +7,36 @@ on:
 
 jobs:
   swift:
-    name: Swift build
+    name: Swift build (SwiftPM smoke + .app bundle)
     runs-on: macos-14
     defaults:
       run:
         working-directory: macos
     steps:
       - uses: actions/checkout@v4
-      - name: Build
+      - name: SwiftPM build (smoke)
         run: swift build
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Build .app bundle
+        run: |
+          xcodebuild \
+            -project Speedy.xcodeproj \
+            -scheme Speedy \
+            -configuration Debug \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Verify bundle layout
+        run: |
+          APP="build/Build/Products/Debug/Speedy.app"
+          test -d "$APP" || { echo "missing $APP"; exit 1; }
+          test -f "$APP/Contents/Info.plist" || { echo "missing Info.plist"; exit 1; }
+          test -x "$APP/Contents/MacOS/Speedy" || { echo "missing executable"; exit 1; }
 
   python:
     name: Python lint + test
