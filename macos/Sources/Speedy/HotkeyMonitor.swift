@@ -43,6 +43,11 @@ final class HotkeyMonitor {
             handler(event)
             return event
         }
+        NSLog(
+            "Speedy: HotkeyMonitor.start() — global=%@ local=%@",
+            globalMonitor != nil ? "yes" : "no",
+            localMonitor != nil ? "yes" : "no"
+        )
     }
 
     func stop() {
@@ -59,6 +64,7 @@ final class HotkeyMonitor {
 
     private func handle(_ event: NSEvent) {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        NSLog("Speedy: flagsChanged raw=0x%llx", UInt64(flags.rawValue))
 
         if flags == .control {
             // Control-only is now held. If we just saw a Control release within

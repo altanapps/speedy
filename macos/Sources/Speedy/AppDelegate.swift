@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Ask for Accessibility on first launch. The prompt is async; the user
         // may grant it later — poll until it flips, then start monitoring.
         let trusted = AccessibilityPermission.requestIfNeeded()
+        NSLog("Speedy: launched. AX trusted=%@", trusted ? "yes" : "no")
         if trusted {
             hotkey.start()
         } else {
