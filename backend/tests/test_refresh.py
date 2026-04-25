@@ -44,14 +44,7 @@ async def _yield(markets: list[GammaMarket]):
 
 @requires_db
 @pytest.mark.asyncio
-async def test_refresh_inserts_and_embeds(db_session, monkeypatch) -> None:
-    # The refresh code uses sessionmaker() to open its own session. Point it at
-    # the test session's engine so it lands in the same per-test schema.
-    from app import db as db_module
-    from app import refresh as refresh_module
-
-    monkeypatch.setattr(refresh_module, "sessionmaker", db_module.sessionmaker)
-
+async def test_refresh_inserts_and_embeds(db_session) -> None:
     embedder = FakeEmbedder()
     fetched = [_gm("1", "Fed cut?"), _gm("2", "Cybertruck deliveries?")]
 
@@ -75,12 +68,7 @@ async def test_refresh_inserts_and_embeds(db_session, monkeypatch) -> None:
 
 @requires_db
 @pytest.mark.asyncio
-async def test_refresh_skips_unchanged_on_second_pass(db_session, monkeypatch) -> None:
-    from app import db as db_module
-    from app import refresh as refresh_module
-
-    monkeypatch.setattr(refresh_module, "sessionmaker", db_module.sessionmaker)
-
+async def test_refresh_skips_unchanged_on_second_pass(db_session) -> None:
     embedder = FakeEmbedder()
     fetched = [_gm("1"), _gm("2")]
 
@@ -97,12 +85,7 @@ async def test_refresh_skips_unchanged_on_second_pass(db_session, monkeypatch) -
 
 @requires_db
 @pytest.mark.asyncio
-async def test_refresh_deactivates_missing(db_session, monkeypatch) -> None:
-    from app import db as db_module
-    from app import refresh as refresh_module
-
-    monkeypatch.setattr(refresh_module, "sessionmaker", db_module.sessionmaker)
-
+async def test_refresh_deactivates_missing(db_session) -> None:
     embedder = FakeEmbedder()
 
     first = [_gm("1"), _gm("2")]
@@ -123,12 +106,7 @@ async def test_refresh_deactivates_missing(db_session, monkeypatch) -> None:
 
 @requires_db
 @pytest.mark.asyncio
-async def test_refresh_re_embeds_when_question_changes(db_session, monkeypatch) -> None:
-    from app import db as db_module
-    from app import refresh as refresh_module
-
-    monkeypatch.setattr(refresh_module, "sessionmaker", db_module.sessionmaker)
-
+async def test_refresh_re_embeds_when_question_changes(db_session) -> None:
     embedder = FakeEmbedder()
     with patch("app.refresh.iter_active_markets", lambda: _yield([_gm("1", "Original?")])):
         await refresh_once(embedder=embedder)
