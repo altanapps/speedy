@@ -3,27 +3,29 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBar: MenuBarController?
     private var hotkey: HotkeyMonitor?
+    private var overlay: OverlayController?
     private var permissionPollTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let menuBar = MenuBarController()
         self.menuBar = menuBar
 
-        let hotkey = HotkeyMonitor { [weak menuBar] in
+        let overlay = OverlayController()
+        self.overlay = overlay
+
+        let hotkey = HotkeyMonitor { [weak menuBar, weak overlay] in
             menuBar?.flash()
             Task { @MainActor in
                 guard let selection = await SelectionCapture.capture() else {
                     NSLog("Speedy: hotkey fired — no selection")
                     return
                 }
-                let preview = selection.highlight.prefix(80)
                 NSLog(
-                    "Speedy: captured via %@ — %@%@ (title=%@)",
+                    "Speedy: captured via %@ — %@",
                     selection.source.rawValue,
-                    String(preview),
-                    selection.highlight.count > 80 ? "…" : "",
-                    selection.pageTitle ?? "—"
+                    selection.highlight.prefix(80) as NSString
                 )
+                overlay?.show(selection)
             }
         }
         self.hotkey = hotkey

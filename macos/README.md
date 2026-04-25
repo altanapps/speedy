@@ -46,6 +46,11 @@ open build/Build/Products/Debug/Speedy.app   # if -derivedDataPath was set to bu
   - `AXSelectionReader.swift` — `kAXSelectedTextAttribute` on the system-wide focused element, plus best-effort surrounding context via `kAXStringForRangeParameterizedAttribute`.
   - `PasteboardSelectionReader.swift` — fallback for Electron (Slack, Notion, Discord, VS Code) where AX doesn't expose the selection. Snapshots the pasteboard, synthesises ⌘C, polls `changeCount` (≤100ms), reads, restores.
   - `WindowInfo.swift` — frontmost app name + AX focused-window title for `pageTitle`.
+- `Sources/Speedy/Overlay/` — cursor-anchored floating panel:
+  - `OverlayPanel.swift` — borderless, non-activating `NSPanel`; floats across Spaces and into full-screen apps; transparent background so the SwiftUI content owns its own chrome.
+  - `OverlayView.swift` — placeholder content (highlight + page title + source badge). Replaced by the real market card in PR 13 once `/search` is wired in.
+  - `OverlayController.swift` — owns one reused panel; presents at cursor; installs Esc + click-outside dismiss monitors; 8s idle auto-dismiss timer.
+  - `OverlayPositioner.swift` — pure cursor → panel-origin math with screen-edge collision avoidance. Tested in `Tests/SpeedyTests/`.
 
 ## Trying it
 
@@ -61,11 +66,23 @@ On first launch macOS will prompt for Accessibility — grant it via System Sett
 
 1. Select some text in any app (Safari, Notes, Slack, a PDF).
 2. Double-tap **Control** anywhere on the system.
-3. The menu-bar bolt icon flashes for ~250ms.
-4. In the Xcode console (⌘⇧Y), you should see something like:
-   ```
-   Speedy: captured via accessibility — Powell signaled patience on rate cuts (title=Safari — Reuters)
-   ```
+3. The menu-bar bolt icon flashes for ~250ms, **and** a small floating panel appears next to the cursor showing the captured text.
+4. The panel dismisses on **Esc**, on **click-outside**, or after **8 seconds** of idle.
+
+In the Xcode console (⌘⇧Y) you'll also see:
+```
+Speedy: captured via accessibility — Powell signaled patience on rate cuts
+```
+
+## Running tests
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer  # one-time
+cd macos
+swift test
+```
+
+CI runs `swift test` on `macos-15` so the test target is exercised on every push.
 
 If you tried it from an Electron app (Slack, Notion, Discord, VS Code), expect `via pasteboard` instead — the same text, just routed through a synthetic ⌘C with the clipboard restored within ~100ms.
 
