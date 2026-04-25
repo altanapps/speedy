@@ -8,7 +8,10 @@ import SwiftUI
 /// already up" correctly (we just reposition with the new selection).
 @MainActor
 final class OverlayController {
-    private static let defaultSize = CGSize(width: 320, height: 140)
+    /// Initial panel size before SwiftUI tells us its real intrinsic size.
+    /// Just needs to be non-zero so NSHostingView has a valid contentRect to
+    /// lay out in; it gets resized on every show().
+    private static let initialSize = CGSize(width: 320, height: 140)
     private static let idleTimeout: TimeInterval = 8.0
 
     private var panel: OverlayPanel?
@@ -23,16 +26,22 @@ final class OverlayController {
         self.panel = panel
 
         let view = OverlayView(selection: selection)
+        let hosting: NSHostingView<OverlayView>
         if let hostingView {
             hostingView.rootView = view
+            hosting = hostingView
         } else {
-            let hosting = NSHostingView(rootView: view)
-            hosting.translatesAutoresizingMaskIntoConstraints = true
+            hosting = NSHostingView(rootView: view)
             panel.contentView = hosting
             hostingView = hosting
         }
 
-        panel.setContentSize(Self.defaultSize)
+        // Let SwiftUI dictate the content size — fixed `.frame(width: 320)` in
+        // OverlayView and intrinsic height from the text. Forcing a hardcoded
+        // size here disagreed with SwiftUI's intrinsic height and caused
+        // layout recursion (-layoutSubtreeIfNeeded inside layout).
+        let size = hosting.fittingSize
+        panel.setContentSize(size)
         let origin = computeOrigin(panelSize: panel.frame.size)
         panel.setFrameOrigin(origin)
         panel.orderFrontRegardless()
@@ -51,7 +60,7 @@ final class OverlayController {
     // MARK: - Panel construction
 
     private func makePanel() -> OverlayPanel {
-        let rect = NSRect(origin: .zero, size: Self.defaultSize)
+        let rect = NSRect(origin: .zero, size: Self.initialSize)
         return OverlayPanel(contentRect: rect)
     }
 
