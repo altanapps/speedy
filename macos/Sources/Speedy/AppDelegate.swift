@@ -11,7 +11,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let hotkey = HotkeyMonitor { [weak menuBar] in
             menuBar?.flash()
-            NSLog("Speedy: hotkey fired")
+            Task { @MainActor in
+                guard let selection = await SelectionCapture.capture() else {
+                    NSLog("Speedy: hotkey fired — no selection")
+                    return
+                }
+                let preview = selection.highlight.prefix(80)
+                NSLog(
+                    "Speedy: captured via %@ — %@%@ (title=%@)",
+                    selection.source.rawValue,
+                    String(preview),
+                    selection.highlight.count > 80 ? "…" : "",
+                    selection.pageTitle ?? "—"
+                )
+            }
         }
         self.hotkey = hotkey
 

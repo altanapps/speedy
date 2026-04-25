@@ -40,10 +40,16 @@ open build/Build/Products/Debug/Speedy.app   # if -derivedDataPath was set to bu
 - `Sources/Speedy/LoginItemController.swift` — wraps `SMAppService.mainApp` (modern macOS 13+ login-item API; replaces the old `~/Library/LaunchAgents` plist approach).
 - `Sources/Speedy/HotkeyMonitor.swift` — `NSEvent` global+local monitor on `.flagsChanged`. Detects double-tap of Control (300ms window) and fires a callback. No `RegisterEventHotKey` because Carbon hotkeys don't trigger on bare modifiers.
 - `Sources/Speedy/AccessibilityPermission.swift` — `AXIsProcessTrusted` check + system prompt + a deep-link to System Settings → Privacy & Security → Accessibility for the "permission missing" flow.
+- `Sources/Speedy/Capture/` — selection-capture pipeline:
+  - `Selection.swift` — `{highlight, surroundingContext?, pageTitle?, source}`
+  - `SelectionCapture.swift` — orchestrator, `@MainActor`, AX first then pasteboard.
+  - `AXSelectionReader.swift` — `kAXSelectedTextAttribute` on the system-wide focused element, plus best-effort surrounding context via `kAXStringForRangeParameterizedAttribute`.
+  - `PasteboardSelectionReader.swift` — fallback for Electron (Slack, Notion, Discord, VS Code) where AX doesn't expose the selection. Snapshots the pasteboard, synthesises ⌘C, polls `changeCount` (≤100ms), reads, restores.
+  - `WindowInfo.swift` — frontmost app name + AX focused-window title for `pageTitle`.
 
-## Trying the hotkey
+## Trying it
 
-After installing full Xcode (the SwiftPM build produces a binary, but Accessibility prompts and reliable global event monitoring need a proper `.app`):
+After installing full Xcode:
 
 ```bash
 cd macos
@@ -51,19 +57,27 @@ xcodegen generate
 open Speedy.xcodeproj            # ⌘R in Xcode
 ```
 
-On first launch macOS will prompt for Accessibility — grant it via System Settings → Privacy & Security → Accessibility. Once granted, double-tap **Control** anywhere on the system; the menu-bar bolt icon should briefly fill, then return to its outline state. That's the trigger that PR 7 will use to capture selected text.
+On first launch macOS will prompt for Accessibility — grant it via System Settings → Privacy & Security → Accessibility. Once granted:
 
-If the prompt was dismissed without granting, toggle the Speedy entry off and on in System Settings; the app polls trust state once a second and starts the monitor as soon as it flips.
+1. Select some text in any app (Safari, Notes, Slack, a PDF).
+2. Double-tap **Control** anywhere on the system.
+3. The menu-bar bolt icon flashes for ~250ms.
+4. In the Xcode console (⌘⇧Y), you should see something like:
+   ```
+   Speedy: captured via accessibility — Powell signaled patience on rate cuts (title=Safari — Reuters)
+   ```
+
+If you tried it from an Electron app (Slack, Notion, Discord, VS Code), expect `via pasteboard` instead — the same text, just routed through a synthetic ⌘C with the clipboard restored within ~100ms.
+
+If the Accessibility prompt was dismissed without granting, toggle the Speedy entry off and on in System Settings; the app polls trust state once a second and starts the monitor as soon as it flips.
 
 ## What's in this PR vs. later
 
-Hotkey detection only — no selection capture, no overlay. The flash is throwaway feedback so PR 6 is independently demoable; it's replaced by the cursor-anchored overlay in PR 8.
+Capture only. Nothing is sent to the backend yet — the captured text is logged so you can verify the pipeline. Wiring the result into a `/search` request lands in PR 13; the cursor-anchored overlay in PR 8.
 
 ## Status
 
 Subsequent PRs add:
-
-- Accessibility-API selection capture with pasteboard fallback (PR 7)
 - Cursor-anchored `NSPanel` overlay (PR 8)
 - Full design-system port — Inter, JetBrains Mono, materials (PR 9)
 - Privy onboarding via `WKWebView` (PR 10)
