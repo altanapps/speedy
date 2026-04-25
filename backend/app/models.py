@@ -4,6 +4,7 @@ from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Boolean, DateTime, Text, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # OpenAI text-embedding-3-small dimensionality. Locked at 1536; if the embedding
@@ -24,6 +25,13 @@ class Market(Base):
     description: Mapped[str | None] = mapped_column(Text)
     end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    category: Mapped[str | None] = mapped_column(Text)
+    tags: Mapped[list[str] | None] = mapped_column(JSONB)
+
+    # Hash of the inputs that go into the embedding text. We re-embed only when
+    # this changes — saves OpenAI calls on the 5-minute refresh.
+    source_hash: Mapped[str | None] = mapped_column(Text)
 
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBED_DIM))
     embedded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

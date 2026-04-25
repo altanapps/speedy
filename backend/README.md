@@ -60,10 +60,30 @@ railway up          # builds via Dockerfile, deploys, returns a URL
 
 Health check on `/health` is wired into the Railway config; failed deploys auto-rollback.
 
+## Refresh job
+
+Speedy's index is filled by polling the Polymarket Gamma API. One refresh cycle:
+
+1. Page through `gamma-api.polymarket.com/markets?active=true&closed=false`.
+2. Upsert every market by id (slug, question, description, end date, category, tags).
+3. Compute a `source_hash` over the embedding inputs; for any market whose hash changed (or that has no embedding yet), call OpenAI `text-embedding-3-small` and store the vector + new hash atomically.
+4. Mark anything not seen this cycle as `active = false`.
+
+`source_hash` lives alongside the embedding (not the metadata), so a half-finished cycle reruns cleanly: a row whose hash is current but whose embed write was rolled back will get re-embedded on the next pass.
+
+Run it:
+
+```bash
+export OPENAI_API_KEY=sk-...
+export DATABASE_URL=postgresql+asyncpg://speedy:speedy@localhost:5432/speedy
+speedy-refresh           # one cycle
+speedy-refresh --loop    # forever, 5-min sleeps
+```
+
+Or run it inside the API process by setting `SPEEDY_RUN_REFRESH=1` — the FastAPI lifespan starts a background task on boot and cancels it cleanly on shutdown. Fine for one Railway replica; if you scale out, move it to its own service.
+
 ## Status
 
-Bare scaffold. Subsequent PRs add:
+Subsequent PRs add:
 
-- Polymarket Gamma client + nightly + 5-min refresh job (PR 4)
-- pgvector schema + OpenAI embedding pipeline (PR 4)
 - `/search` endpoint with confidence threshold (PR 5)
