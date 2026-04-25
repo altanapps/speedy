@@ -12,6 +12,9 @@ Pre-MVP. PRD locked, design system + working web prototype shipped, native build
 
 ## Layout
 
+- [`macos/`](./macos/) — native macOS app (Swift + SwiftUI).
+- [`backend/`](./backend/) — Python + FastAPI retrieval service (Polymarket index + `/search`).
+- [`eval/`](./eval/) — labeled selection→market evaluation corpus.
 - [`PRD.md`](./PRD.md) — full product spec (overview, architecture, MVP scope, risks).
 - [`claude-design/`](./claude-design/) — canonical design system + interactive prototype.
   - [`Speedy Design System.html`](./claude-design/Speedy%20Design%20System.html) — tokens, typography, components, motion, voice. The source of truth for visual design.
