@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api import router as api_router
 from app.refresh import REFRESH_INTERVAL_SECONDS, run_loop
 
 log = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Speedy", version="0.1.0", lifespan=lifespan)
+app.include_router(api_router)
 
 
 @app.get("/health")

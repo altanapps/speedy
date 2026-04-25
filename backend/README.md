@@ -82,8 +82,40 @@ speedy-refresh --loop    # forever, 5-min sleeps
 
 Or run it inside the API process by setting `SPEEDY_RUN_REFRESH=1` — the FastAPI lifespan starts a background task on boot and cancels it cleanly on shutdown. Fine for one Railway replica; if you scale out, move it to its own service.
 
+## Search
+
+`POST /search` — top-1 semantic match against active markets.
+
+```
+POST /search
+{
+  "highlight": "Powell signaled patience on rate cuts",
+  "surrounding_context": "...optional context from the page...",
+  "page_title": "FT.com — Fed minutes"
+}
+
+200 OK
+{
+  "match": {
+    "id": "...",
+    "slug": "...",
+    "question": "...",
+    "description": "...",
+    "end_date": "2026-05-07T20:00:00Z",
+    "category": "Macro",
+    "tags": ["fed"]
+  },
+  "score": 0.71,
+  "threshold": 0.55
+}
+```
+
+If no active market clears the threshold, the response is `{"match": null, "score": null, "threshold": ...}` — the overlay's job to render the "no tradeable market" UX.
+
+The threshold is cosine similarity (range `[-1, 1]`); configure via `SPEEDY_SEARCH_THRESHOLD` (default `0.55`). Tune against the `eval/` set once it has fixtures.
+
 ## Status
 
 Subsequent PRs add:
 
-- `/search` endpoint with confidence threshold (PR 5)
+- LLM rerank (Haiku) over the top-N pgvector candidates (v0.2)
