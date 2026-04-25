@@ -1,0 +1,41 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Xcode / Swift
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcuserstate
+Package.resolved
+.swiftpm/
+
+# Python (for backend services)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Node (in case the mock or extension grows)
+node_modules/
+dist/
+.next/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Secrets / local
+*.pem
+*.key
+secrets/
+.local/
