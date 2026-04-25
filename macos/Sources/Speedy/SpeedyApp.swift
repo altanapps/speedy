@@ -2,11 +2,14 @@ import SwiftUI
 
 @main
 struct SpeedyApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("Speedy") {
             ContentView()
-                .frame(minWidth: 320, minHeight: 200)
+                .frame(minWidth: 360, minHeight: 220)
         }
+        .windowResizability(.contentSize)
     }
 }
 

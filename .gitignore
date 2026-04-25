@@ -8,8 +8,8 @@ Icon
 build/
 .build/
 DerivedData/
-*.xcodeproj/xcuserdata/
-*.xcworkspace/xcuserdata/
+*.xcodeproj/
+*.xcworkspace/
 *.xcuserstate
 Package.resolved
 .swiftpm/
