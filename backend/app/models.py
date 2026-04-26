@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Boolean, DateTime, Text, func
+from sqlalchemy import Boolean, DateTime, Numeric, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -35,6 +36,13 @@ class Market(Base):
 
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBED_DIM))
     embedded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    # Live state, refreshed every cycle. Stored as Decimal on disk for
+    # exactness; serialized to float in the API response.
+    yes_price: Mapped[Decimal | None] = mapped_column(Numeric(6, 4))
+    no_price: Mapped[Decimal | None] = mapped_column(Numeric(6, 4))
+    volume_24h: Mapped[Decimal | None] = mapped_column(Numeric(20, 2))
+    prices_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

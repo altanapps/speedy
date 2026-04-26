@@ -32,6 +32,9 @@ class GammaMarket:
     active: bool
     category: str | None
     tags: list[str]
+    yes_price: float | None = None
+    no_price: float | None = None
+    volume_24h: float | None = None
 
 
 def _parse_dt(value: Any) -> datetime | None:
@@ -69,12 +72,82 @@ def _parse_tags(value: Any) -> list[str]:
     return out
 
 
+def _parse_outcome_prices(raw: Any) -> tuple[float | None, float | None]:
+    """Gamma returns `outcomePrices` as a JSON-encoded list of strings, paired
+    with `outcomes` (also JSON-encoded). Map the Yes/No labels to prices,
+    case-insensitively. Anything weirder (3+ outcomes, missing labels) → both
+    None — the overlay will just hide the price row."""
+    if not raw:
+        return (None, None)
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            return (None, None)
+    if not isinstance(raw, list) or not raw:
+        return (None, None)
+    try:
+        prices = [float(p) for p in raw]
+    except (ValueError, TypeError):
+        return (None, None)
+    # Default to position-based: index 0 = Yes, 1 = No.
+    yes = prices[0] if len(prices) > 0 else None
+    no = prices[1] if len(prices) > 1 else None
+    return (yes, no)
+
+
+def _parse_outcomes_with_prices(
+    raw_outcomes: Any, raw_prices: Any
+) -> tuple[float | None, float | None]:
+    """Properly map outcome labels → prices when both lists are present and
+    aligned. Falls back to position-based mapping when labels are missing."""
+    yes_pos, no_pos = _parse_outcome_prices(raw_prices)
+    if not raw_outcomes:
+        return (yes_pos, no_pos)
+    outcomes = raw_outcomes
+    if isinstance(outcomes, str):
+        try:
+            outcomes = json.loads(outcomes)
+        except (json.JSONDecodeError, ValueError):
+            return (yes_pos, no_pos)
+    if not isinstance(outcomes, list):
+        return (yes_pos, no_pos)
+    prices_raw = raw_prices
+    if isinstance(prices_raw, str):
+        try:
+            prices_raw = json.loads(prices_raw)
+        except (json.JSONDecodeError, ValueError):
+            prices_raw = None
+    if not isinstance(prices_raw, list):
+        return (yes_pos, no_pos)
+    try:
+        labelled = {
+            str(label).lower(): float(price)
+            for label, price in zip(outcomes, prices_raw, strict=False)
+        }
+    except (ValueError, TypeError):
+        return (yes_pos, no_pos)
+    return (labelled.get("yes", yes_pos), labelled.get("no", no_pos))
+
+
+def _parse_volume(raw: Any) -> float | None:
+    if raw is None:
+        return None
+    try:
+        return float(raw)
+    except (ValueError, TypeError):
+        return None
+
+
 def parse_market(raw: dict[str, Any]) -> GammaMarket | None:
     market_id = raw.get("id") or raw.get("conditionId")
     slug = raw.get("slug")
     question = raw.get("question")
     if not (market_id and slug and question):
         return None
+    yes, no = _parse_outcomes_with_prices(
+        raw.get("outcomes"), raw.get("outcomePrices")
+    )
     return GammaMarket(
         id=str(market_id),
         slug=str(slug),
@@ -84,6 +157,9 @@ def parse_market(raw: dict[str, Any]) -> GammaMarket | None:
         active=bool(raw.get("active", True)) and not bool(raw.get("closed", False)),
         category=raw.get("category"),
         tags=_parse_tags(raw.get("tags")),
+        yes_price=yes,
+        no_price=no,
+        volume_24h=_parse_volume(raw.get("volume24hr") or raw.get("volume_24hr")),
     )
 
 

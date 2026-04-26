@@ -10,6 +10,10 @@ struct MatchedMarket: Codable, Equatable, Sendable {
     let endDate: Date?
     let category: String?
     let tags: [String]?
+    let yesPrice: Double?
+    let noPrice: Double?
+    let volume24h: Double?
+    let pricesUpdatedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -19,6 +23,10 @@ struct MatchedMarket: Codable, Equatable, Sendable {
         case endDate = "end_date"
         case category
         case tags
+        case yesPrice = "yes_price"
+        case noPrice = "no_price"
+        case volume24h = "volume_24h"
+        case pricesUpdatedAt = "prices_updated_at"
     }
 }
 

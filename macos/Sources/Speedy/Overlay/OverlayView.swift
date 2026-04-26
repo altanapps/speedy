@@ -128,8 +128,9 @@ struct OverlayView: View {
     }
 
     /// Matched: the canonical card from `app.jsx` — source row, question,
-    /// price row. NO trade controls (Yes/No / size / confirm) by design;
-    /// the trade-flow agent appends them in a follow-up.
+    /// price row, optional volume / resolution metadata. NO trade controls
+    /// (Yes/No / size / confirm) by design; the trade-flow agent appends
+    /// them in a follow-up.
     private func matchedBody(market: MatchedMarket, score: Double) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             sourceRow(market: market, score: score)
@@ -143,6 +144,12 @@ struct OverlayView: View {
                 .truncationMode(.tail)
                 .fixedSize(horizontal: false, vertical: true)
 
+            if market.yesPrice != nil || market.noPrice != nil {
+                priceRow(market: market)
+            }
+
+            metaRow(market: market)
+
             // Reserved trade-controls slot. Empty today; trade-flow agent
             // fills it. Sized so the matched state has visible breathing
             // room, signalling that something belongs here.
@@ -151,6 +158,58 @@ struct OverlayView: View {
         .padding(.horizontal, 14)
         .padding(.top, 11)
         .padding(.bottom, 12)
+    }
+
+    /// YES 62¢   NO 38¢ — mono numerics, label tracking matches the design
+    /// system's small-caps source row.
+    private func priceRow(market: MatchedMarket) -> some View {
+        HStack(spacing: 14) {
+            priceCell(label: "YES", price: market.yesPrice, accent: Speedy.ColorToken.green)
+            priceCell(label: "NO", price: market.noPrice, accent: Speedy.ColorToken.red)
+            Spacer()
+        }
+        .padding(.top, 2)
+    }
+
+    private func priceCell(label: String, price: Double?, accent: Color) -> some View {
+        HStack(spacing: 5) {
+            Text(label)
+                .font(Speedy.Font.mono(10, weight: .semibold))
+                .tracking(0.6)
+                .foregroundStyle(Speedy.ColorToken.labelTertiary)
+            Text(_formatPrice(price))
+                .font(Speedy.Font.mono(13, weight: .semibold))
+                .foregroundStyle(price == nil ? Speedy.ColorToken.labelTertiary : accent)
+        }
+    }
+
+    /// $1.2M vol · resolves Apr 28 — small, secondary. Hidden if both pieces
+    /// of information are missing.
+    @ViewBuilder
+    private func metaRow(market: MatchedMarket) -> some View {
+        let hasVolume = market.volume24h != nil
+        let hasEnd = market.endDate != nil
+        if hasVolume || hasEnd {
+            HStack(spacing: 6) {
+                if let volume = market.volume24h {
+                    Text("\(_formatVolume(volume)) vol")
+                        .font(Speedy.Font.mono(10, weight: .medium))
+                        .foregroundStyle(Speedy.ColorToken.labelTertiary)
+                }
+                if hasVolume && hasEnd {
+                    Text("·")
+                        .font(Speedy.Font.mono(10))
+                        .foregroundStyle(Speedy.ColorToken.labelTertiary)
+                }
+                if let endDate = market.endDate {
+                    Text("resolves \(_formatEndDate(endDate))")
+                        .font(Speedy.Font.inter(10))
+                        .foregroundStyle(Speedy.ColorToken.labelTertiary)
+                }
+                Spacer()
+            }
+            .padding(.top, 1)
+        }
     }
 
     private func noMatchBody(threshold: Double) -> some View {
@@ -379,6 +438,38 @@ private struct NoMatchDot: View {
     }
 }
 
+// MARK: - Formatting helpers
+
+/// "62¢" / "1.5¢" / "—". Polymarket prices are 0-1; render as cents with
+/// no fractional point unless the price is sub-1¢.
+func _formatPrice(_ price: Double?) -> String {
+    guard let price else { return "—" }
+    let cents = price * 100
+    if cents < 1 && cents > 0 {
+        return String(format: "%.1f¢", cents)
+    }
+    return String(format: "%.0f¢", cents)
+}
+
+/// "$12.5M" / "$845K" / "$3,200" — compact human-readable USDC volume.
+func _formatVolume(_ volume: Double) -> String {
+    if volume >= 1_000_000 {
+        return String(format: "$%.1fM", volume / 1_000_000)
+    }
+    if volume >= 1_000 {
+        return String(format: "$%.0fK", volume / 1_000)
+    }
+    return String(format: "$%.0f", volume)
+}
+
+/// "Apr 28" / "Tomorrow" / "in 2h" — a compact relative-or-absolute date
+/// label appropriate for the resolution timestamp.
+func _formatEndDate(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MMM d"
+    return formatter.string(from: date)
+}
+
 // MARK: - Previews
 
 #if DEBUG
@@ -396,7 +487,11 @@ private let _previewMarket = MatchedMarket(
     description: nil,
     endDate: Date(timeIntervalSinceNow: 86_400 * 14),
     category: "Macro",
-    tags: ["fed", "rates"]
+    tags: ["fed", "rates"],
+    yesPrice: 0.62,
+    noPrice: 0.38,
+    volume24h: 1_245_000,
+    pricesUpdatedAt: Date()
 )
 
 struct OverlayView_Previews: PreviewProvider {
