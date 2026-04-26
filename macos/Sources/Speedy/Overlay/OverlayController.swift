@@ -32,11 +32,14 @@ final class OverlayController {
     private var outcome: OrderRequest.Outcome = .yes
     private var sizeText: String = OverlayController.defaultSizeUSDC
 
-    /// Anchor pinned at first render of each `show()`. Subsequent re-renders
-    /// (e.g. typing in the size field, toggling Yes/No) reuse this so the
-    /// panel doesn't jump to the cursor's new location while the user is
-    /// interacting with it.
-    private var pinnedOrigin: CGPoint?
+    /// Top-left anchor of the panel, pinned on first render of each
+    /// `show()`. Subsequent re-renders reuse it so the panel doesn't chase
+    /// the cursor *and* doesn't visually jump when its height reflows
+    /// (typing in the size field, toggling Yes/No, status change). We pin
+    /// top-left rather than bottom-left because macOS panels grow downward
+    /// from a fixed top — pinning the bottom would make the top edge bob
+    /// up/down as content height changes.
+    private var pinnedTopLeft: CGPoint?
 
     init(searchClient: SearchClient, orderClient: OrderClient) {
         self.searchClient = searchClient
@@ -50,7 +53,7 @@ final class OverlayController {
         matchedMarket = nil
         outcome = .yes
         sizeText = Self.defaultSizeUSDC
-        pinnedOrigin = nil  // re-anchor on the first render of this show()
+        pinnedTopLeft = nil  // re-anchor on the first render of this show()
 
         render(status: .searching)
         installDismissMonitors()
@@ -84,7 +87,7 @@ final class OverlayController {
     func showPreview(selection: Selection, status: OverlayStatus) {
         searchTask?.cancel()
         currentSelection = selection
-        pinnedOrigin = nil  // re-anchor on the first render of this preview
+        pinnedTopLeft = nil  // re-anchor on the first render of this preview
         // Keep matchedMarket in sync if previewing a matched state, so
         // TradeControls bind correctly in preview mode too.
         if case let .matched(market, _) = status {
@@ -106,7 +109,7 @@ final class OverlayController {
         idleTimer = nil
         removeDismissMonitors()
         panel?.orderOut(nil)
-        pinnedOrigin = nil
+        pinnedTopLeft = nil
     }
 
     // MARK: - Order submission
@@ -198,17 +201,21 @@ final class OverlayController {
         // and caused -layoutSubtreeIfNeeded recursion.
         let size = hosting.fittingSize
         panel.setContentSize(size)
-        // Pin the origin on the first render of each show()/showPreview().
-        // Subsequent re-renders (typing in the size field, toggling Yes/No)
-        // reuse it — the panel stays put while the user interacts with it.
-        // It only repositions on the next fresh hotkey fire.
-        let origin: CGPoint
-        if let pinned = pinnedOrigin {
-            origin = pinned
+        // Pin the *top-left* of the panel. macOS frame origins are
+        // bottom-left, so we convert: bottomLeft.y = topLeft.y - height.
+        // First render establishes the top-left from the cursor; later
+        // re-renders (size field typing, Yes/No toggle, status change)
+        // reuse the same top-left, so the panel grows downward without the
+        // visible top edge ever moving. Re-anchored on the next show().
+        let topLeft: CGPoint
+        if let pinned = pinnedTopLeft {
+            topLeft = pinned
         } else {
-            origin = computeOrigin(panelSize: size)
-            pinnedOrigin = origin
+            let bottomLeft = computeOrigin(panelSize: size)
+            topLeft = CGPoint(x: bottomLeft.x, y: bottomLeft.y + size.height)
+            pinnedTopLeft = topLeft
         }
+        let origin = CGPoint(x: topLeft.x, y: topLeft.y - size.height)
         panel.setFrameOrigin(origin)
         panel.orderFrontRegardless()
     }
