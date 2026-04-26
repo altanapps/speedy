@@ -4,24 +4,17 @@ Python + FastAPI + Postgres+pgvector. Hosts the Polymarket market index and the 
 
 ## Run locally
 
+The Makefile drives a brew-native postgres + pgvector setup — no Docker required.
+
 ```bash
 cd backend
-
-# 1. Start Postgres + pgvector via docker-compose
-docker compose up -d
-
-# 2. Set up the Python env
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-
-# 3. Apply migrations
-export DATABASE_URL=postgresql+asyncpg://speedy:speedy@localhost:5432/speedy
-alembic upgrade head
-
-# 4. Run the server
-uvicorn app.main:app --reload
+make setup                       # brew installs postgres@17 + pgvector, creates the speedy db, runs migrations
+export OPENAI_API_KEY=sk-...
+make refresh                     # one cycle: pulls active Polymarket markets + embeds them (~5–15 min the first time)
+make serve                       # uvicorn on :8000 — leave running
 ```
+
+`make doctor` prints a one-screen diagnostic if anything goes wrong (postgres not running, venv missing, no API key, etc.).
 
 Health check:
 
@@ -33,9 +26,8 @@ curl http://localhost:8000/health
 ## Test
 
 ```bash
-export DATABASE_URL=postgresql+asyncpg://speedy:speedy@localhost:5432/speedy
-alembic upgrade head
-pytest
+. .venv/bin/activate
+DATABASE_URL=postgresql+asyncpg://speedy:speedy@localhost:5432/speedy pytest
 ruff check .
 ```
 
@@ -44,21 +36,11 @@ DB-touching tests are skipped automatically when `DATABASE_URL` is unset.
 ## Migrations
 
 ```bash
+. .venv/bin/activate
 alembic revision -m "describe what changed"   # generate a new migration stub
-alembic upgrade head                            # apply migrations
+alembic upgrade head                            # apply migrations (or `make migrate`)
 alembic downgrade -1                            # roll one back
 ```
-
-## Deploy (Railway)
-
-`railway.json` is checked in. After `railway login`:
-
-```bash
-railway link        # first time only, links this directory to a Railway project
-railway up          # builds via Dockerfile, deploys, returns a URL
-```
-
-Health check on `/health` is wired into the Railway config; failed deploys auto-rollback.
 
 ## Refresh job
 
@@ -71,51 +53,22 @@ Speedy's index is filled by polling the Polymarket Gamma API. One refresh cycle:
 
 `source_hash` lives alongside the embedding (not the metadata), so a half-finished cycle reruns cleanly: a row whose hash is current but whose embed write was rolled back will get re-embedded on the next pass.
 
-Run it:
+`make refresh` is one cycle. To loop it forever (5-min sleeps):
 
 ```bash
-export OPENAI_API_KEY=sk-...
-export DATABASE_URL=postgresql+asyncpg://speedy:speedy@localhost:5432/speedy
-speedy-refresh           # one cycle
-speedy-refresh --loop    # forever, 5-min sleeps
+. .venv/bin/activate
+DATABASE_URL=… speedy-refresh --loop
 ```
 
-Or run it inside the API process by setting `SPEEDY_RUN_REFRESH=1` — the FastAPI lifespan starts a background task on boot and cancels it cleanly on shutdown. Fine for one Railway replica; if you scale out, move it to its own service.
+Or run it inside the API process by setting `SPEEDY_RUN_REFRESH=1` — the FastAPI lifespan starts a background task on boot and cancels it cleanly on shutdown.
 
-## Search
+## Deploy (Railway, optional)
 
-`POST /search` — top-1 semantic match against active markets.
+Self-hosted-on-each-machine is the v0.1 default, but `railway.json` is checked in for when you want a shared instance. After `railway login`:
 
-```
-POST /search
-{
-  "highlight": "Powell signaled patience on rate cuts",
-  "surrounding_context": "...optional context from the page...",
-  "page_title": "FT.com — Fed minutes"
-}
-
-200 OK
-{
-  "match": {
-    "id": "...",
-    "slug": "...",
-    "question": "...",
-    "description": "...",
-    "end_date": "2026-05-07T20:00:00Z",
-    "category": "Macro",
-    "tags": ["fed"]
-  },
-  "score": 0.71,
-  "threshold": 0.55
-}
+```bash
+railway link        # first time only
+railway up          # builds via Dockerfile, deploys, returns a URL
 ```
 
-If no active market clears the threshold, the response is `{"match": null, "score": null, "threshold": ...}` — the overlay's job to render the "no tradeable market" UX.
-
-The threshold is cosine similarity (range `[-1, 1]`); configure via `SPEEDY_SEARCH_THRESHOLD` (default `0.55`). Tune against the `eval/` set once it has fixtures.
-
-## Status
-
-Subsequent PRs add:
-
-- LLM rerank (Haiku) over the top-N pgvector candidates (v0.2)
+Health check on `/health` is wired into the Railway config; failed deploys auto-rollback.
