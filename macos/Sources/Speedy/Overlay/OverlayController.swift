@@ -42,6 +42,12 @@ final class OverlayController {
     /// up/down as content height changes.
     private var pinnedTopLeft: CGPoint?
 
+    /// Polymarket profile URL for the configured funder address. Resolved
+    /// once at app launch via the backend's /config endpoint and threaded
+    /// into the overlay so deep-links work without a per-render fetch.
+    /// Nil until the fetch completes (or if the backend isn't configured).
+    var polymarketProfileURL: URL?
+
     init(searchClient: SearchClient, orderClient: OrderClient) {
         self.searchClient = searchClient
         self.orderClient = orderClient
@@ -186,7 +192,12 @@ final class OverlayController {
             config = nil
         }
 
-        let view = OverlayView(selection: selection, status: status, tradeControls: config)
+        let view = OverlayView(
+            selection: selection,
+            status: status,
+            tradeControls: config,
+            polymarketProfileURL: polymarketProfileURL
+        )
         let hosting: NSHostingView<OverlayView>
         if let hostingView {
             hostingView.rootView = view

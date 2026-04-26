@@ -38,6 +38,9 @@ struct OverlayView: View {
     /// Keeping this as a single optional config avoids forking OverlayView's
     /// init in a way that would conflict with the design-system port (PR 9).
     var tradeControls: TradeControlsConfig? = nil
+    /// Polymarket profile URL for the configured funder address. When set,
+    /// the placed-state link goes here instead of the generic /portfolio.
+    var polymarketProfileURL: URL? = nil
 
     /// Trade overlay width per `DESIGN.md §8` and `app.jsx` (`width:300`,
     /// rounded up to the design system's documented 320pt). Height is
@@ -165,7 +168,11 @@ struct OverlayView: View {
 
             metaRow(market: market)
 
-            polymarketLink(slug: market.slug, label: "View on Polymarket")
+            polymarketLink(
+                explicitURL: nil,
+                slug: market.slug,
+                label: "View on Polymarket"
+            )
 
             if let cfg = tradeControls {
                 Divider()
@@ -184,11 +191,15 @@ struct OverlayView: View {
         .padding(.bottom, 12)
     }
 
-    /// Subtle "↗ View on Polymarket" link. Used both in the matched state
-    /// (deep-links to the specific market) and the placed state (links to
-    /// the user's portfolio so they can verify the position landed).
-    private func polymarketLink(slug: String?, label: String) -> some View {
+    /// Subtle "↗ View on Polymarket" link. URL precedence:
+    ///   1. `explicitURL` — usually the funder profile from /config.
+    ///   2. `slug` → polymarket.com/event/<slug> (per-market deep-link).
+    ///   3. /portfolio fallback when neither is available.
+    private func polymarketLink(
+        explicitURL: URL?, slug: String?, label: String
+    ) -> some View {
         let url: URL? = {
+            if let explicitURL { return explicitURL }
             if let slug, !slug.isEmpty {
                 return URL(string: "https://polymarket.com/event/\(slug)")
             }
@@ -333,7 +344,11 @@ struct OverlayView: View {
                     .font(Speedy.Font.mono(11))
                     .foregroundStyle(Speedy.ColorToken.labelSecondary)
                     .lineLimit(1)
-                polymarketLink(slug: nil, label: "View positions on Polymarket")
+                polymarketLink(
+                    explicitURL: polymarketProfileURL,
+                    slug: nil,
+                    label: "View positions on Polymarket"
+                )
             case let .orderError(message):
                 HStack(spacing: 8) {
                     Circle()

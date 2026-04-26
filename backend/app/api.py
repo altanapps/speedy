@@ -32,6 +32,26 @@ from app.trading import (
 router = APIRouter()
 
 
+class ConfigResponse(BaseModel):
+    """What the macOS app needs to know about the running backend.
+
+    `funder_address` is the wallet whose positions live on Polymarket — the
+    proxy address for `signature_type=1/2` setups, the raw EOA for
+    `signature_type=0`. The macOS overlay uses it to build profile links.
+    Returns null if the backend hasn't been configured for trading yet.
+    """
+
+    funder_address: str | None
+    polymarket_profile_url: str | None
+
+
+@router.get("/config", response_model=ConfigResponse)
+async def config_endpoint() -> ConfigResponse:
+    funder = (os.environ.get("POLYMARKET_FUNDER_ADDRESS") or "").strip() or None
+    profile_url = f"https://polymarket.com/profile/{funder}" if funder else None
+    return ConfigResponse(funder_address=funder, polymarket_profile_url=profile_url)
+
+
 class SearchRequest(BaseModel):
     highlight: str = Field(..., min_length=1, max_length=2000)
     surrounding_context: str | None = Field(default=None, max_length=4000)

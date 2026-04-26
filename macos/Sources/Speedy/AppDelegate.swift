@@ -16,6 +16,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         self.overlay = overlay
 
+        // Resolve the user's Polymarket profile URL once at launch so the
+        // overlay's "View positions" deep-link points at the right wallet.
+        // Non-fatal if it fails — overlay falls back to /portfolio.
+        Task { [weak overlay] in
+            guard let config = await ConfigClient().fetch() else { return }
+            guard let urlString = config.polymarketProfileUrl,
+                  let url = URL(string: urlString) else { return }
+            await MainActor.run {
+                overlay?.polymarketProfileURL = url
+            }
+        }
+
         // Wire the menu-bar's preview hook so users can see overlay visuals
         // without AX trust or a working hotkey path. Always on for now —
         // makes design QA cheap.
