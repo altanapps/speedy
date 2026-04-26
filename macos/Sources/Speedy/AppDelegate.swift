@@ -10,7 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menuBar = MenuBarController()
         self.menuBar = menuBar
 
-        let overlay = OverlayController()
+        let overlay = OverlayController(searchClient: HTTPSearchClient())
         self.overlay = overlay
 
         let hotkey = HotkeyMonitor { [weak menuBar, weak overlay] in

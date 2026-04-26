@@ -1,31 +1,77 @@
 import AppKit
 import SwiftUI
 
-/// Owns the floating overlay panel: lifecycle, placement, and dismissal.
+/// Owns the floating overlay panel: lifecycle, placement, dismissal, and the
+/// in-flight search.
 ///
-/// One panel is reused across hotkey fires — cheaper than recreating, and the
-/// reuse path also handles "user double-taps Control while the overlay is
-/// already up" correctly (we just reposition with the new selection).
+/// One panel is reused across hotkey fires. A fresh fire cancels any
+/// previous search-in-flight before kicking off a new one — otherwise a slow
+/// /search response from a previous selection could land on top of the
+/// current selection's panel and confuse the user.
 @MainActor
 final class OverlayController {
-    /// Initial panel size before SwiftUI tells us its real intrinsic size.
-    /// Just needs to be non-zero so NSHostingView has a valid contentRect to
-    /// lay out in; it gets resized on every show().
-    private static let initialSize = CGSize(width: 320, height: 140)
+    private static let initialSize = CGSize(width: 340, height: 140)
     private static let idleTimeout: TimeInterval = 8.0
+
+    private let searchClient: SearchClient
 
     private var panel: OverlayPanel?
     private var hostingView: NSHostingView<OverlayView>?
 
+    private var searchTask: Task<Void, Never>?
     private var keyMonitor: Any?
     private var clickMonitor: Any?
     private var idleTimer: Timer?
 
+    init(searchClient: SearchClient) {
+        self.searchClient = searchClient
+    }
+
     func show(_ selection: Selection) {
+        searchTask?.cancel()
+        render(selection: selection, status: .searching)
+        installDismissMonitors()
+        restartIdleTimer()
+
+        searchTask = Task { [weak self, searchClient] in
+            do {
+                let outcome = try await searchClient.search(selection)
+                guard !Task.isCancelled else { return }
+                let status: OverlayStatus = {
+                    switch outcome {
+                    case let .matched(market, score, _):
+                        return .matched(market, score: score)
+                    case let .noMatch(_, threshold):
+                        return .noMatch(threshold: threshold)
+                    }
+                }()
+                self?.render(selection: selection, status: status)
+            } catch let error as SearchError {
+                guard !Task.isCancelled else { return }
+                self?.render(selection: selection, status: .error(Self.describe(error)))
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.render(selection: selection, status: .error(error.localizedDescription))
+            }
+        }
+    }
+
+    func dismiss() {
+        searchTask?.cancel()
+        searchTask = nil
+        idleTimer?.invalidate()
+        idleTimer = nil
+        removeDismissMonitors()
+        panel?.orderOut(nil)
+    }
+
+    // MARK: - Render
+
+    private func render(selection: Selection, status: OverlayStatus) {
         let panel = panel ?? makePanel()
         self.panel = panel
 
-        let view = OverlayView(selection: selection)
+        let view = OverlayView(selection: selection, status: status)
         let hosting: NSHostingView<OverlayView>
         if let hostingView {
             hostingView.rootView = view
@@ -36,25 +82,25 @@ final class OverlayController {
             hostingView = hosting
         }
 
-        // Let SwiftUI dictate the content size — fixed `.frame(width: 320)` in
-        // OverlayView and intrinsic height from the text. Forcing a hardcoded
-        // size here disagreed with SwiftUI's intrinsic height and caused
-        // layout recursion (-layoutSubtreeIfNeeded inside layout).
+        // Let SwiftUI dictate size — `.frame(width: 340)` plus intrinsic
+        // height. Hardcoding here disagreed with SwiftUI's intrinsic size
+        // and caused -layoutSubtreeIfNeeded recursion.
         let size = hosting.fittingSize
         panel.setContentSize(size)
         let origin = computeOrigin(panelSize: panel.frame.size)
         panel.setFrameOrigin(origin)
         panel.orderFrontRegardless()
-
-        installDismissMonitors()
-        restartIdleTimer()
     }
 
-    func dismiss() {
-        idleTimer?.invalidate()
-        idleTimer = nil
-        removeDismissMonitors()
-        panel?.orderOut(nil)
+    private static func describe(_ error: SearchError) -> String {
+        switch error {
+        case let .transport(message):
+            return "Couldn't reach Speedy backend (\(message))"
+        case let .http(status):
+            return "Backend error (HTTP \(status))"
+        case let .decode(message):
+            return "Couldn't read backend response (\(message))"
+        }
     }
 
     // MARK: - Panel construction
@@ -83,9 +129,6 @@ final class OverlayController {
     private func installDismissMonitors() {
         removeDismissMonitors()
 
-        // Esc dismisses. Local first so the panel-key path works; global so we
-        // catch Esc when focus stayed in the source app (which it does, since
-        // the panel is non-activating).
         let keyHandler: (NSEvent) -> Void = { [weak self] event in
             // 53 = kVK_Escape
             if event.keyCode == 53 {
@@ -96,9 +139,7 @@ final class OverlayController {
             matching: [.keyDown], handler: keyHandler
         )
 
-        // Click outside the panel dismisses. Local clicks (i.e. on the panel
-        // itself) are explicitly allowed through.
-        let clickHandler: (NSEvent) -> Void = { [weak self] event in
+        let clickHandler: (NSEvent) -> Void = { [weak self] _ in
             guard let self, let panel = self.panel else { return }
             let clickLocation = NSEvent.mouseLocation
             if !panel.frame.contains(clickLocation) {
