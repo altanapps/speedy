@@ -7,9 +7,7 @@ struct SpeedyApp: App {
     var body: some Scene {
         WindowGroup("Speedy") {
             ContentView()
-                .frame(minWidth: 360, minHeight: 220)
         }
-        .windowResizability(.contentSize)
     }
 }
 
@@ -22,5 +20,6 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(32)
+        .frame(width: 360, height: 220)
     }
 }

@@ -49,7 +49,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         permissionPollTimer?.invalidate()
         permissionPollTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) {
             [weak self] timer in
-            guard AccessibilityPermission.isTrusted else { return }
+            let trusted = AccessibilityPermission.isTrusted
+            NSLog("Speedy: AX poll tick — trusted=%@", trusted ? "yes" : "no")
+            guard trusted else { return }
             timer.invalidate()
             self?.permissionPollTimer = nil
             hotkey.start()
