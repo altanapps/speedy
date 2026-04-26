@@ -43,3 +43,7 @@ dist/
 *.key
 secrets/
 .local/
+
+# Raw video recordings — only the converted demo GIF in docs/ ships
+*.mp4
+*.mov
