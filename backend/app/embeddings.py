@@ -16,7 +16,18 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 EMBED_MODEL = "text-embedding-3-small"
-API_BATCH = 2048
+
+# OpenAI embeddings caps:
+#   - 2048 inputs per request (input-count cap)
+#   - 300_000 tokens per request (token cap; tighter in practice)
+# We batch greedily by *characters*, using a 4-char-per-token heuristic and
+# a 30% safety margin, so a batch never exceeds the token cap. Plus a hard
+# input-count cap so we don't hit the 2048-input limit either.
+API_INPUT_CAP = 2000
+API_TOKEN_CAP = 300_000
+_CHARS_PER_TOKEN = 4
+_SAFETY = 0.7
+API_CHAR_BUDGET = int(API_TOKEN_CAP * _CHARS_PER_TOKEN * _SAFETY)  # ≈ 840k chars
 
 
 class Embedder(Protocol):
@@ -46,8 +57,37 @@ class OpenAIEmbedder:
             return []
         client = self._ensure_client()
         out: list[list[float]] = []
-        for start in range(0, len(texts), API_BATCH):
-            chunk = texts[start : start + API_BATCH]
-            resp = await client.embeddings.create(model=self._model, input=chunk)
+        for batch in _greedy_batches(texts):
+            resp = await client.embeddings.create(model=self._model, input=batch)
             out.extend(item.embedding for item in resp.data)
         return out
+
+
+def _greedy_batches(texts: list[str]) -> list[list[str]]:
+    """Pack `texts` into batches that respect both API caps."""
+    batches: list[list[str]] = []
+    current: list[str] = []
+    current_chars = 0
+    for text in texts:
+        size = len(text)
+        # If a single text somehow exceeds the budget on its own, ship it
+        # alone and let the API decide — we'd rather get a clean error than
+        # silently truncate.
+        if size >= API_CHAR_BUDGET:
+            if current:
+                batches.append(current)
+                current = []
+                current_chars = 0
+            batches.append([text])
+            continue
+        if current and (
+            len(current) >= API_INPUT_CAP or current_chars + size > API_CHAR_BUDGET
+        ):
+            batches.append(current)
+            current = []
+            current_chars = 0
+        current.append(text)
+        current_chars += size
+    if current:
+        batches.append(current)
+    return batches

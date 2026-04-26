@@ -1,5 +1,12 @@
 .PHONY: help setup db venv install migrate refresh serve doctor
 
+# Source .env if it exists so OPENAI_API_KEY (and any overrides) carry across
+# shells without the user re-exporting them.
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
+
 POSTGRES_FORMULA := postgresql@17
 PGVECTOR_FORMULA := pgvector
 PYTHON ?= python3.14
@@ -8,17 +15,23 @@ DB_NAME := speedy
 DB_USER := speedy
 DB_PASSWORD := speedy
 DB_PORT := 5432
-DATABASE_URL := postgresql+asyncpg://$(DB_USER):$(DB_PASSWORD)@localhost:$(DB_PORT)/$(DB_NAME)
+# Honor an explicit DATABASE_URL (e.g. from .env); otherwise default to local.
+DATABASE_URL ?= postgresql+asyncpg://$(DB_USER):$(DB_PASSWORD)@localhost:$(DB_PORT)/$(DB_NAME)
 
 help:  ## Print this help
 	@awk 'BEGIN{FS=":.*##"; printf "\n  make \033[36m<target>\033[0m\n\n"} /^[a-z_-]+:.*##/{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-setup: db venv install migrate  ## One-shot first-time setup (everything below)
+setup: db venv install migrate env  ## One-shot first-time setup (everything below)
 	@echo
 	@echo "✓ Setup complete. Next:"
-	@echo "    export OPENAI_API_KEY=sk-..."
+	@if [ -z "$$OPENAI_API_KEY" ]; then \
+	  echo "    edit backend/.env and put your OPENAI_API_KEY=sk-..."; \
+	fi
 	@echo "    make refresh        # populate the index (~5–15 min)"
 	@echo "    make serve          # start the API on :8000"
+
+env:  ## Create a .env from .env.example if absent
+	@if [ ! -f .env ]; then cp .env.example .env && echo "✓ created .env (fill in OPENAI_API_KEY)"; else echo "✓ .env present"; fi
 
 db:  ## Install postgres + pgvector via brew, create the speedy database
 	@command -v brew >/dev/null 2>&1 || { echo "Homebrew is required: https://brew.sh"; exit 1; }
@@ -48,7 +61,7 @@ migrate:  ## Apply alembic migrations
 	@echo "✓ schema up to date"
 
 refresh:  ## Pull active Polymarket markets + embed (needs OPENAI_API_KEY)
-	@if [ -z "$$OPENAI_API_KEY" ]; then echo "OPENAI_API_KEY is not set. export OPENAI_API_KEY=sk-... first."; exit 1; fi
+	@if [ -z "$$OPENAI_API_KEY" ]; then echo "OPENAI_API_KEY is not set. Add it to backend/.env or export it."; exit 1; fi
 	@. $(VENV)/bin/activate && DATABASE_URL=$(DATABASE_URL) speedy-refresh
 
 serve:  ## Run uvicorn on :8000

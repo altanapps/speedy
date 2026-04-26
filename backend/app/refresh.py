@@ -32,6 +32,16 @@ log = logging.getLogger(__name__)
 
 REFRESH_INTERVAL_SECONDS = 300
 
+# asyncpg caps the parameter count at 32767 per query. Real Polymarket pulls
+# easily exceed that (the "active" set as Gamma defines it is much larger
+# than 5–20k). Batch any IN-clause / multi-row VALUES query well below that.
+_DB_BATCH = 1000
+
+
+def _chunks(seq: list, size: int):
+    for i in range(0, len(seq), size):
+        yield seq[i : i + size]
+
 
 @dataclass(frozen=True, slots=True)
 class RefreshStats:
@@ -48,14 +58,18 @@ async def _read_prior_state(
     id_list = list(ids)
     if not id_list:
         return {}
-    rows = (
-        await session.execute(
-            select(Market.id, Market.source_hash, Market.embedding).where(
-                Market.id.in_(id_list)
+    out: dict[str, tuple[str | None, bool]] = {}
+    for chunk in _chunks(id_list, _DB_BATCH):
+        rows = (
+            await session.execute(
+                select(Market.id, Market.source_hash, Market.embedding).where(
+                    Market.id.in_(chunk)
+                )
             )
-        )
-    ).all()
-    return {row.id: (row.source_hash, row.embedding is not None) for row in rows}
+        ).all()
+        for row in rows:
+            out[row.id] = (row.source_hash, row.embedding is not None)
+    return out
 
 
 async def _upsert_metadata(session: AsyncSession, markets: list[GammaMarket]) -> None:
@@ -64,35 +78,35 @@ async def _upsert_metadata(session: AsyncSession, markets: list[GammaMarket]) ->
     rows whose hash is already current."""
     if not markets:
         return
-    stmt = pg_insert(Market).values(
-        [
-            {
-                "id": m.id,
-                "slug": m.slug,
-                "question": m.question,
-                "description": m.description,
-                "end_date": m.end_date,
-                "active": True,
-                "category": m.category,
-                "tags": m.tags or None,
-            }
-            for m in markets
-        ]
+    update_cols_keys = (
+        "slug",
+        "question",
+        "description",
+        "end_date",
+        "active",
+        "category",
+        "tags",
     )
-    update_cols = {
-        c: stmt.excluded[c]
-        for c in (
-            "slug",
-            "question",
-            "description",
-            "end_date",
-            "active",
-            "category",
-            "tags",
+    # 8 columns per row × 1000 rows = 8000 params, well under asyncpg's 32767.
+    for chunk in _chunks(markets, _DB_BATCH):
+        stmt = pg_insert(Market).values(
+            [
+                {
+                    "id": m.id,
+                    "slug": m.slug,
+                    "question": m.question,
+                    "description": m.description,
+                    "end_date": m.end_date,
+                    "active": True,
+                    "category": m.category,
+                    "tags": m.tags or None,
+                }
+                for m in chunk
+            ]
         )
-    }
-    stmt = stmt.on_conflict_do_update(index_elements=["id"], set_=update_cols)
-    await session.execute(stmt)
+        update_cols = {c: stmt.excluded[c] for c in update_cols_keys}
+        stmt = stmt.on_conflict_do_update(index_elements=["id"], set_=update_cols)
+        await session.execute(stmt)
 
 
 async def _deactivate_missing(session: AsyncSession, seen_ids: set[str]) -> int:
@@ -103,9 +117,10 @@ async def _deactivate_missing(session: AsyncSession, seen_ids: set[str]) -> int:
     stale = [r for r in rows if r not in seen_ids]
     if not stale:
         return 0
-    await session.execute(
-        Market.__table__.update().where(Market.id.in_(stale)).values(active=False)
-    )
+    for chunk in _chunks(stale, _DB_BATCH):
+        await session.execute(
+            Market.__table__.update().where(Market.id.in_(chunk)).values(active=False)
+        )
     return len(stale)
 
 
@@ -141,12 +156,21 @@ async def _embed_and_store(
 async def refresh_once(*, embedder: Embedder | None = None) -> RefreshStats:
     embedder = embedder or OpenAIEmbedder()
 
-    markets: list[GammaMarket] = []
+    fetched: list[GammaMarket] = []
     async for m in iter_active_markets():
-        markets.append(m)
-    log.info("polymarket: fetched %d active markets", len(markets))
+        fetched.append(m)
 
-    markets_by_id = {m.id: m for m in markets}
+    # Gamma sometimes returns the same id across pages (and ON CONFLICT DO
+    # UPDATE can only resolve one row at a time within a statement). Dedupe by
+    # id, keeping the first occurrence — the markets are otherwise identical.
+    markets_by_id: dict[str, GammaMarket] = {}
+    for m in fetched:
+        markets_by_id.setdefault(m.id, m)
+    markets = list(markets_by_id.values())
+    log.info(
+        "polymarket: fetched %d active markets (%d unique)", len(fetched), len(markets)
+    )
+
     new_hashes = {m.id: content_hash(build_text(m)) for m in markets}
 
     async with sessionmaker()() as session:

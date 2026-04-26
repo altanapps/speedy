@@ -23,9 +23,13 @@ cd speedy
 
 ```bash
 cd backend
-make setup                       # brew installs postgres@16 + pgvector, creates the speedy db, runs migrations
-export OPENAI_API_KEY=sk-...
-make refresh                     # pulls Polymarket markets + embeds them (~5–15 min)
+make setup                       # brew installs postgres@17 + pgvector, creates the speedy db, runs migrations, creates .env
+
+# put your OpenAI key in backend/.env (it's gitignored):
+#   OPENAI_API_KEY=sk-...
+# get one at https://platform.openai.com/api-keys
+
+make refresh                     # pulls Polymarket markets + embeds them (~5–15 min, ~$0.10 in OpenAI charges)
 make serve                       # runs uvicorn on :8000 — leave it running
 ```
 

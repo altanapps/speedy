@@ -8,11 +8,13 @@ The Makefile drives a brew-native postgres + pgvector setup — no Docker requir
 
 ```bash
 cd backend
-make setup                       # brew installs postgres@17 + pgvector, creates the speedy db, runs migrations
-export OPENAI_API_KEY=sk-...
+make setup                       # brew installs postgres@17 + pgvector, creates the speedy db, runs migrations, creates .env
+# edit .env and set OPENAI_API_KEY=sk-...
 make refresh                     # one cycle: pulls active Polymarket markets + embeds them (~5–15 min the first time)
 make serve                       # uvicorn on :8000 — leave running
 ```
+
+The Makefile auto-sources `backend/.env` (gitignored) for `OPENAI_API_KEY`, optional `DATABASE_URL`, and `SPEEDY_SEARCH_THRESHOLD`. See `.env.example`.
 
 `make doctor` prints a one-screen diagnostic if anything goes wrong (postgres not running, venv missing, no API key, etc.).
 
