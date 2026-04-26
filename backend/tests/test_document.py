@@ -16,6 +16,9 @@ def _market(**overrides) -> GammaMarket:
         active=True,
         category="Macro",
         tags=["fed", "rates"],
+        condition_id=None,
+        clob_token_yes=None,
+        clob_token_no=None,
     )
     base.update(overrides)
     return GammaMarket(**base)

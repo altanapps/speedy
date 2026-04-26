@@ -57,6 +57,72 @@ def test_parse_market_skips_missing_required() -> None:
     assert parse_market({"id": "1", "slug": "s"}) is None  # no question
 
 
+def test_parse_market_extracts_clob_token_ids_from_json_strings() -> None:
+    """Gamma's wire format: outcomes and clobTokenIds are JSON-encoded strings,
+    aligned by index. We must decode and zip them so YES/NO map to the right
+    on-chain token id."""
+    yes_id = (
+        "8501497159083948713316135768103773293754490207922884688769443031624417212426"
+    )
+    no_id = (
+        "2527312495175492857904889758552137141356236738032676480522356889996545113869"
+    )
+    m = parse_market(
+        {
+            "id": "540816",
+            "slug": "x",
+            "question": "q",
+            "conditionId": "0xcond",
+            "outcomes": '["Yes", "No"]',
+            "clobTokenIds": f'["{yes_id}", "{no_id}"]',
+        }
+    )
+    assert m is not None
+    assert m.condition_id == "0xcond"
+    assert m.clob_token_yes == yes_id
+    assert m.clob_token_no == no_id
+
+
+def test_parse_market_handles_outcome_label_case() -> None:
+    m = parse_market(
+        {
+            "id": "1",
+            "slug": "x",
+            "question": "q",
+            "outcomes": ["YES", "no"],
+            "clobTokenIds": ["yes-tok", "no-tok"],
+        }
+    )
+    assert m is not None
+    assert m.clob_token_yes == "yes-tok"
+    assert m.clob_token_no == "no-tok"
+
+
+def test_parse_market_returns_none_clob_when_outcomes_mismatched() -> None:
+    """If Gamma returns a non-binary market (3 outcomes) we don't try to
+    guess — both token ids stay None and /order will refuse the trade."""
+    m = parse_market(
+        {
+            "id": "1",
+            "slug": "x",
+            "question": "q",
+            "outcomes": ["A", "B", "C"],
+            "clobTokenIds": ["a", "b"],
+        }
+    )
+    assert m is not None
+    assert m.clob_token_yes is None
+    assert m.clob_token_no is None
+
+
+def test_parse_market_no_clob_fields_at_all() -> None:
+    m = parse_market({"id": "1", "slug": "x", "question": "q"})
+    assert m is not None
+    assert m.condition_id is None
+    assert m.clob_token_yes is None
+    assert m.clob_token_no is None
+
+
 @pytest.mark.asyncio
 async def test_iter_active_markets_paginates_and_filters() -> None:
     page1 = [

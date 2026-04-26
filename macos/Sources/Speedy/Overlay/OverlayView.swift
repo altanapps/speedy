@@ -1,16 +1,18 @@
 import SwiftUI
 
-/// Overlay state machine, driven by `OverlayController`. The four states
-/// each render a distinct Speedy visual:
+/// Overlay state machine, driven by `OverlayController`. The states each
+/// render a distinct Speedy visual:
 ///
 /// - `.searching` — attribution bar + a hairline pulse and "scanning…"
 /// - `.matched`   — full trading-cursor card (header / source row / question
-///                  / price). Trade controls (Yes/No, size, confirm) are
-///                  intentionally omitted; the trade-flow agent appends
-///                  them in a follow-up PR.
-/// - `.noMatch`   — honest empty state per voice spec ("No tradeable
-///                  market found.")
-/// - `.error`     — same chrome, a red one-liner.
+///                  / price / volume / resolution date). When
+///                  `tradeControls` is non-nil, `TradeControls` is mounted
+///                  in the reserved slot under the meta row.
+/// - `.noMatch`   — honest empty state per voice spec.
+/// - `.error`     — chrome + red one-liner (search failure).
+/// - `.placing` / `.placed` / `.orderError` — trading transitions. Reached
+///   only from a previous `.matched` state. Reuse `matchedBody`'s layout +
+///   show the order status in the trade-controls slot.
 ///
 /// Visual reference: `claude-design/Trading Cursor.html` + the hero
 /// preview in `claude-design/Speedy Design System.html` §08.
@@ -19,11 +21,23 @@ enum OverlayStatus: Equatable {
     case matched(MatchedMarket, score: Double)
     case noMatch(threshold: Double)
     case error(String)
+
+    // Trading states. Reached only after a `.matched` state — `placing` while
+    // the /order request is in flight, `placed` on success, `orderError` on
+    // any failure (transport, CLOB rejection, missing creds, etc.).
+    case placing
+    case placed(orderId: String)
+    case orderError(String)
 }
 
 struct OverlayView: View {
     let selection: Selection
     let status: OverlayStatus
+    /// Optional trade-control bindings. When non-nil and `status` is
+    /// `.matched`, the overlay renders `TradeControls` below the market card.
+    /// Keeping this as a single optional config avoids forking OverlayView's
+    /// init in a way that would conflict with the design-system port (PR 9).
+    var tradeControls: TradeControlsConfig? = nil
 
     /// Trade overlay width per `DESIGN.md §8` and `app.jsx` (`width:300`,
     /// rounded up to the design system's documented 320pt). Height is
@@ -46,6 +60,8 @@ struct OverlayView: View {
                 noMatchBody(threshold: threshold)
             case let .error(message):
                 errorBody(message: message)
+            case .placing, .placed, .orderError:
+                tradingBody
             }
         }
         .frame(width: Self.overlayWidth, alignment: .leading)
@@ -128,9 +144,8 @@ struct OverlayView: View {
     }
 
     /// Matched: the canonical card from `app.jsx` — source row, question,
-    /// price row, optional volume / resolution metadata. NO trade controls
-    /// (Yes/No / size / confirm) by design; the trade-flow agent appends
-    /// them in a follow-up.
+    /// price row, optional volume / resolution metadata, and trade controls
+    /// when `tradeControls` is provided.
     private func matchedBody(market: MatchedMarket, score: Double) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             sourceRow(market: market, score: score)
@@ -150,10 +165,17 @@ struct OverlayView: View {
 
             metaRow(market: market)
 
-            // Reserved trade-controls slot. Empty today; trade-flow agent
-            // fills it. Sized so the matched state has visible breathing
-            // room, signalling that something belongs here.
-            Color.clear.frame(height: 8)
+            if let cfg = tradeControls {
+                Divider()
+                    .background(Speedy.ColorToken.separator)
+                    .padding(.top, 4)
+                TradeControls(
+                    outcome: cfg.outcome,
+                    sizeText: cfg.sizeText,
+                    onSubmit: cfg.onSubmit
+                )
+                .padding(.top, 2)
+            }
         }
         .padding(.horizontal, 14)
         .padding(.top, 11)
@@ -246,6 +268,60 @@ struct OverlayView: View {
                 .foregroundStyle(Speedy.ColorToken.labelSecondary)
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+    }
+
+    /// Trading transitions: placing / placed / orderError. Same chrome as
+    /// the search-failure body — we don't re-render the matched-card layout
+    /// here because the user just saw it a moment ago. A single status row
+    /// + the highlight excerpt for context is enough.
+    @ViewBuilder
+    private var tradingBody: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            switch status {
+            case .placing:
+                HStack(spacing: 8) {
+                    ScanningDot()
+                    Text("Placing order…")
+                        .font(Speedy.Font.inter(12, weight: .medium))
+                        .foregroundStyle(Speedy.ColorToken.label)
+                    Spacer()
+                }
+                highlightExcerpt
+            case let .placed(orderId):
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Speedy.ColorToken.green)
+                        .frame(width: 6, height: 6)
+                    Text("Order placed")
+                        .font(Speedy.Font.inter(12, weight: .semibold))
+                        .foregroundStyle(Speedy.ColorToken.label)
+                    Spacer()
+                }
+                Text("#\(String(orderId.prefix(8)))")
+                    .font(Speedy.Font.mono(11))
+                    .foregroundStyle(Speedy.ColorToken.labelSecondary)
+                    .lineLimit(1)
+            case let .orderError(message):
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Speedy.ColorToken.red)
+                        .frame(width: 6, height: 6)
+                    Text("Order failed")
+                        .font(Speedy.Font.inter(12, weight: .semibold))
+                        .foregroundStyle(Speedy.ColorToken.label)
+                    Spacer()
+                }
+                Text(message)
+                    .font(Speedy.Font.inter(11))
+                    .foregroundStyle(Speedy.ColorToken.labelSecondary)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            default:
+                EmptyView()
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -520,3 +596,11 @@ struct OverlayView_Previews: PreviewProvider {
     }
 }
 #endif
+/// Bundles the bindings + callback `OverlayView` needs to render
+/// `TradeControls`. Holding these inside a struct keeps the OverlayView init
+/// short and merge-friendly against the design-system port.
+struct TradeControlsConfig {
+    let outcome: Binding<OrderRequest.Outcome>
+    let sizeText: Binding<String>
+    let onSubmit: () -> Void
+}

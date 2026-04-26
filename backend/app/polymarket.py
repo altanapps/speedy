@@ -35,6 +35,11 @@ class GammaMarket:
     yes_price: float | None = None
     no_price: float | None = None
     volume_24h: float | None = None
+    # CLOB trading identifiers. Optional: not every Gamma market has them
+    # (some are Gamma-only). When missing, /order refuses to trade the market.
+    condition_id: str | None = None
+    clob_token_yes: str | None = None
+    clob_token_no: str | None = None
 
 
 def _parse_dt(value: Any) -> datetime | None:
@@ -139,6 +144,37 @@ def _parse_volume(raw: Any) -> float | None:
         return None
 
 
+def _parse_clob_token_ids(raw: Any, outcomes: Any) -> tuple[str | None, str | None]:
+    """Gamma returns `clobTokenIds` aligned with `outcomes` — both are
+    JSON-encoded strings (or already-decoded lists). Pull out the YES and NO
+    token ids by matching the outcome label, case-insensitively. Returns
+    `(yes_id, no_id)`; either may be None if the shape is unexpected.
+    """
+    def _decode(value: Any) -> list[Any]:
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except (json.JSONDecodeError, ValueError):
+                return []
+        return value if isinstance(value, list) else []
+
+    token_ids = _decode(raw)
+    outcome_labels = _decode(outcomes)
+    if len(token_ids) != len(outcome_labels):
+        return (None, None)
+    yes_id: str | None = None
+    no_id: str | None = None
+    for label, token_id in zip(outcome_labels, token_ids, strict=True):
+        if not isinstance(label, str) or not isinstance(token_id, (str, int)):
+            continue
+        normalized = label.strip().lower()
+        if normalized == "yes":
+            yes_id = str(token_id)
+        elif normalized == "no":
+            no_id = str(token_id)
+    return (yes_id, no_id)
+
+
 def parse_market(raw: dict[str, Any]) -> GammaMarket | None:
     market_id = raw.get("id") or raw.get("conditionId")
     slug = raw.get("slug")
@@ -148,6 +184,11 @@ def parse_market(raw: dict[str, Any]) -> GammaMarket | None:
     yes, no = _parse_outcomes_with_prices(
         raw.get("outcomes"), raw.get("outcomePrices")
     )
+    yes_token, no_token = _parse_clob_token_ids(
+        raw.get("clobTokenIds") or raw.get("clob_token_ids"),
+        raw.get("outcomes"),
+    )
+    condition_id = raw.get("conditionId") or raw.get("condition_id")
     return GammaMarket(
         id=str(market_id),
         slug=str(slug),
@@ -160,6 +201,9 @@ def parse_market(raw: dict[str, Any]) -> GammaMarket | None:
         yes_price=yes,
         no_price=no,
         volume_24h=_parse_volume(raw.get("volume24hr") or raw.get("volume_24hr")),
+        condition_id=str(condition_id) if condition_id else None,
+        clob_token_yes=yes_token,
+        clob_token_no=no_token,
     )
 
 
