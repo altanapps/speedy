@@ -240,15 +240,23 @@ final class OverlayController {
         scheduleAutoDismiss(for: status)
     }
 
-    /// Per-status auto-dismiss. Cancels any prior timer on each render —
-    /// transitioning out of `.noMatch` into `.placing` keeps the panel up.
+    /// Per-status auto-dismiss. Cancels any prior timer on each render so
+    /// transitioning *out* of an auto-dismissing state (e.g. into `.placing`)
+    /// keeps the panel up.
     private func scheduleAutoDismiss(for status: OverlayStatus) {
         autoDismissTimer?.invalidate()
         autoDismissTimer = nil
         let delay: TimeInterval? = {
             switch status {
-            case .noMatch: return 2.0
-            default: return nil
+            case .noMatch:
+                // Information-only; don't make the user reach for Esc.
+                return 2.0
+            case .placed:
+                // Order is in. Give them a beat to read the order id /
+                // click the "View on Polymarket" link, then clear out.
+                return 3.0
+            default:
+                return nil
             }
         }()
         guard let delay else { return }
