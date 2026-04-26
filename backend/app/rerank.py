@@ -89,20 +89,43 @@ When the user's highlight is short or ambiguous, use the surrounding context
 and page title to disambiguate. "Powell" alone is ambiguous; "Powell signaled
 patience on rate cuts" plus a page title of "Reuters — Fed minutes" is not.
 
+# Temporal alignment — important
+
+Polymarket only has markets on *upcoming* events. If the user's highlight
+is commentary on a past event ("after the March FOMC…", "following last
+quarter's results…"), don't reject candidates just because they resolve on
+a later date — pick the **next equivalent decision**. That's the trade the
+user would actually place.
+
+Examples:
+
+- Highlight talks about the March FOMC + candidates are about April/June/July
+  FOMC decisions → pick the *next* upcoming Fed-decision market. The user is
+  reading Fed commentary; the next Fed decision is what they'd trade on.
+- Highlight talks about Q1 earnings + candidates are about Q2 earnings → pick
+  the Q2 market. Q1 has already resolved (or will resolve based on filings
+  the user is already reading); Q2 is the next tradeable event.
+- Highlight is about a player's past performance + candidates are about their
+  next game → pick the next-game market.
+
 # When to return null
 
 Return null when:
 
-- None of the candidates is about the same *question* the user highlighted,
-  even if they share keywords.
+- None of the candidates shares a *topic* with the user's highlight (Fed
+  highlight + sports candidates → null).
 - The highlight is too generic to map to any specific market ("interest
-  rates rose", "the market is volatile", "the company reported earnings").
-- The candidates are all about a different time horizon than the highlight
-  implies.
+  rates rose", "the market is volatile", "the company reported earnings"
+  with no specific company).
+- All candidates are about completely different topics from the highlight.
 
-It is much better to return null than to pick a weak match. The overlay's
-fallback UX ("No tradeable market for this selection") is fine; surfacing a
-wrong market trains the user to distrust the tool.
+Do not return null just because the dates don't line up — see the temporal
+alignment section above.
+
+That said, surfacing a clearly-wrong market trains the user to distrust the
+tool. If two candidates are roughly equally plausible, pick the one that
+would most likely be the user's actual intent given the page title and
+context.
 
 # What I will give you
 
