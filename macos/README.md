@@ -88,6 +88,20 @@ If you tried it from an Electron app (Slack, Notion, Discord, VS Code), expect `
 
 If the Accessibility prompt was dismissed without granting, toggle the Speedy entry off and on in System Settings; the app polls trust state once a second and starts the monitor as soon as it flips.
 
+### "AX is on, but the hotkey doesn't fire"
+
+macOS pins Accessibility trust to a binary's **code signature**, not its bundle id. Every ad-hoc dev build (`CODE_SIGN_IDENTITY="-"`) produces a new signature, so the "Speedy" entry you see toggled on is for a *previous* build. The current binary has no matching trust entry and `AXIsProcessTrusted()` returns `false` even though the entry looks correct.
+
+Reset it cleanly:
+
+```bash
+tccutil reset Accessibility tech.nuff.speedy
+```
+
+Then **⌘.** + **⌘R** in Xcode. A fresh prompt appears — grant it. The new signature gets a fresh trust entry and the polling timer flips within ~1s.
+
+You'll need this every time the binary signature changes meaningfully (e.g. after long pauses between builds, switching machines, or signing-config changes). Once we have a real Developer ID signature in PR 15, this stops being an issue.
+
 ## What's in this PR vs. later
 
 Capture only. Nothing is sent to the backend yet — the captured text is logged so you can verify the pipeline. Wiring the result into a `/search` request lands in PR 13; the cursor-anchored overlay in PR 8.
