@@ -18,6 +18,15 @@ The Makefile auto-sources `backend/.env` (gitignored) for `OPENAI_API_KEY`, opti
 
 `make doctor` prints a one-screen diagnostic if anything goes wrong (postgres not running, venv missing, no API key, etc.).
 
+### LLM rerank (recommended)
+
+`/search` runs in two modes:
+
+- **Embedding-only** (default if `ANTHROPIC_API_KEY` is unset): pgvector top-1 with a cosine-similarity threshold gate. Threshold tunable via `SPEEDY_SEARCH_THRESHOLD` (default `0.55`).
+- **Embedding + rerank** (when `ANTHROPIC_API_KEY` is set): pgvector top-10 → `claude-haiku-4-5` disambiguator → top-1. Bypasses the cosine threshold; trusts the reranker's "none of these is good" judgment. Cost: ~$0.001 per search.
+
+Set `ANTHROPIC_API_KEY` in `.env` to enable rerank. PRD §6.3 v0.2 retrieval path; biggest expected gain on ambiguous queries (*"Powell"* → which Powell?).
+
 Health check:
 
 ```bash
