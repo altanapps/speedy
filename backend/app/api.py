@@ -1,11 +1,13 @@
 """HTTP layer for /search.
 
-Kept in its own module so app/main.py stays a thin wiring file. The embedder
-is exposed as a FastAPI dependency so tests (and any future caller that wants
-to swap models) can override it without touching the route function.
+Kept in its own module so app/main.py stays a thin wiring file. Both the
+embedder and the reranker are exposed as FastAPI dependencies so tests (and
+any future caller that wants to swap models) can override them without
+touching the route function.
 """
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Annotated
@@ -16,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import sessionmaker
 from app.embeddings import Embedder, OpenAIEmbedder
+from app.rerank import HaikuReranker, Reranker
 from app.search import search
 
 router = APIRouter()
@@ -44,6 +47,7 @@ class SearchResponse(BaseModel):
 
 
 _default_embedder: Embedder | None = None
+_default_reranker: Reranker | None = None
 
 
 def get_embedder() -> Embedder:
@@ -53,6 +57,19 @@ def get_embedder() -> Embedder:
     if _default_embedder is None:
         _default_embedder = OpenAIEmbedder()
     return _default_embedder
+
+
+def get_reranker() -> Reranker | None:
+    """Singleton HaikuReranker if `ANTHROPIC_API_KEY` is set; otherwise None.
+    A None reranker means /search falls back to embedding-only top-1 with the
+    cosine-similarity threshold gate."""
+    global _default_reranker
+    if _default_reranker is not None:
+        return _default_reranker
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return None
+    _default_reranker = HaikuReranker()
+    return _default_reranker
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
@@ -65,6 +82,7 @@ async def search_endpoint(
     req: SearchRequest,
     session: Annotated[AsyncSession, Depends(get_session)],
     embedder: Annotated[Embedder, Depends(get_embedder)],
+    reranker: Annotated[Reranker | None, Depends(get_reranker)],
 ) -> SearchResponse:
     if not req.highlight.strip():
         raise HTTPException(status_code=422, detail="highlight is empty")
@@ -74,6 +92,7 @@ async def search_endpoint(
         highlight=req.highlight,
         surrounding_context=req.surrounding_context,
         page_title=req.page_title,
+        reranker=reranker,
     )
     if hit is None:
         return SearchResponse(match=None, score=None, threshold=threshold)

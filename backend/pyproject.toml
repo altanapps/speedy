@@ -12,6 +12,7 @@ dependencies = [
     "alembic>=1.13",
     "httpx>=0.27",
     "openai>=1.30",
+    "anthropic>=0.40",
 ]
 
 [project.optional-dependencies]
