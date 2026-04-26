@@ -39,5 +39,9 @@
         <key>NSAllowsLocalNetworking</key>
         <true/>
     </dict>
+    <!-- Custom fonts bundled under Resources/Fonts. macOS auto-registers
+         everything inside this subpath at app launch. -->
+    <key>ATSApplicationFontsPath</key>
+    <string>Fonts</string>
 </dict>
 </plist>
