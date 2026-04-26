@@ -23,6 +23,7 @@ final class OverlayController {
     private var searchTask: Task<Void, Never>?
     private var orderTask: Task<Void, Never>?
     private var keyMonitor: Any?
+    private var localKeyMonitor: Any?
     private var clickMonitor: Any?
     private var idleTimer: Timer?
 
@@ -283,7 +284,14 @@ final class OverlayController {
         // idle-timeout were both removed — users were losing the panel
         // mid-edit when they clicked into another app to look something up.
         // ⌘↵ still submits a trade.
-        let keyHandler: (NSEvent) -> Void = { [weak self] event in
+        //
+        // We install both global and local monitors:
+        //   - global catches Esc / ⌘↵ when focus is in Safari (most common)
+        //   - local catches them when focus has hopped to Speedy itself
+        //     (which happens transiently after an order completes — without
+        //     a local monitor, Esc was getting eaten by SwiftUI internals
+        //     and the .placed overlay stayed stuck on screen).
+        let act: (NSEvent) -> Void = { [weak self] event in
             // 53 = kVK_Escape  → dismiss.
             // 36 = kVK_Return with ⌘ → submit (only meaningful when matched).
             if event.keyCode == 53 {
@@ -293,14 +301,24 @@ final class OverlayController {
             }
         }
         keyMonitor = NSEvent.addGlobalMonitorForEvents(
-            matching: [.keyDown], handler: keyHandler
+            matching: [.keyDown], handler: act
         )
+        localKeyMonitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.keyDown]
+        ) { event in
+            act(event)
+            return event
+        }
     }
 
     private func removeDismissMonitors() {
         if let m = keyMonitor {
             NSEvent.removeMonitor(m)
             keyMonitor = nil
+        }
+        if let m = localKeyMonitor {
+            NSEvent.removeMonitor(m)
+            localKeyMonitor = nil
         }
         if let m = clickMonitor {
             NSEvent.removeMonitor(m)
