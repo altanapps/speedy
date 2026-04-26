@@ -56,6 +56,16 @@ final class OverlayController {
         }
     }
 
+    /// Render an arbitrary selection + status without hitting the backend.
+    /// Used by the menu-bar "Preview overlay" debug menu so visuals can be
+    /// checked without AX trust or a real search round-trip.
+    func showPreview(selection: Selection, status: OverlayStatus) {
+        searchTask?.cancel()
+        render(selection: selection, status: status)
+        installDismissMonitors()
+        restartIdleTimer()
+    }
+
     func dismiss() {
         searchTask?.cancel()
         searchTask = nil
