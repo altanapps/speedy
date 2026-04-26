@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: SwiftPM build (smoke)
         run: swift build
+      - name: SwiftPM tests
+        run: swift test
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate Xcode project

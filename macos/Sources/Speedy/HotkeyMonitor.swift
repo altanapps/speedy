@@ -43,6 +43,11 @@ final class HotkeyMonitor {
             handler(event)
             return event
         }
+        NSLog(
+            "Speedy: HotkeyMonitor.start() — global=%@ local=%@",
+            globalMonitor != nil ? "yes" : "no",
+            localMonitor != nil ? "yes" : "no"
+        )
     }
 
     func stop() {

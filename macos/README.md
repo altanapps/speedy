@@ -40,10 +40,43 @@ open build/Build/Products/Debug/Speedy.app   # if -derivedDataPath was set to bu
 - `Sources/Speedy/LoginItemController.swift` — wraps `SMAppService.mainApp` (modern macOS 13+ login-item API; replaces the old `~/Library/LaunchAgents` plist approach).
 - `Sources/Speedy/HotkeyMonitor.swift` — `NSEvent` global+local monitor on `.flagsChanged`. Detects double-tap of Control (300ms window) and fires a callback. No `RegisterEventHotKey` because Carbon hotkeys don't trigger on bare modifiers.
 - `Sources/Speedy/AccessibilityPermission.swift` — `AXIsProcessTrusted` check + system prompt + a deep-link to System Settings → Privacy & Security → Accessibility for the "permission missing" flow.
+- `Sources/Speedy/Capture/` — selection-capture pipeline:
+  - `Selection.swift` — `{highlight, surroundingContext?, pageTitle?, source}`
+  - `SelectionCapture.swift` — orchestrator, `@MainActor`, AX first then pasteboard.
+  - `AXSelectionReader.swift` — `kAXSelectedTextAttribute` on the system-wide focused element, plus best-effort surrounding context via `kAXStringForRangeParameterizedAttribute`.
+  - `PasteboardSelectionReader.swift` — fallback for Electron (Slack, Notion, Discord, VS Code) where AX doesn't expose the selection. Snapshots the pasteboard, synthesises ⌘C, polls `changeCount` (≤100ms), reads, restores.
+  - `WindowInfo.swift` — frontmost app name + AX focused-window title for `pageTitle`.
+- `Sources/Speedy/Overlay/` — cursor-anchored floating panel:
+  - `OverlayPanel.swift` — borderless, non-activating `NSPanel`; floats across Spaces and into full-screen apps; transparent background so the SwiftUI content owns its own chrome.
+  - `OverlayView.swift` — content driven by an `OverlayStatus` state machine: searching / matched / no-match / error. Real design-system styling lands in PR 9.
+  - `OverlayController.swift` — owns one reused panel and the in-flight `SearchClient` task; presents at cursor; installs Esc + click-outside dismiss monitors; 8s idle auto-dismiss timer; cancels any in-flight search when a fresh hotkey fires.
+  - `OverlayPositioner.swift` — pure cursor → panel-origin math with screen-edge collision avoidance. Tested in `Tests/SpeedyTests/`.
+- `Sources/Speedy/Search/` — backend wire-up:
+  - `SearchResult.swift` — `MatchedMarket` + `SearchResponse` Codable models mirroring the backend's Pydantic; `SearchOutcome` collapses into `matched` / `noMatch`.
+  - `SearchClient.swift` — `SearchClient` protocol + `HTTPSearchClient` (URLSession-backed). Backend URL: `SPEEDY_BACKEND_URL` env var → `SpeedyBackendURL` Info.plist → `http://localhost:8000`.
 
-## Trying the hotkey
+## Trying it end-to-end
 
-After installing full Xcode (the SwiftPM build produces a binary, but Accessibility prompts and reliable global event monitoring need a proper `.app`):
+You need the backend running so the overlay has something to hit. From the repo root:
+
+```bash
+# 1. Postgres + pgvector
+cd backend
+docker compose up -d
+python3.14 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+export DATABASE_URL=postgresql+asyncpg://speedy:speedy@localhost:5432/speedy
+export OPENAI_API_KEY=sk-...
+alembic upgrade head
+
+# 2. Populate the index (takes a few minutes — OpenAI embeddings are the bottleneck)
+speedy-refresh
+
+# 3. Serve the API
+uvicorn app.main:app --reload
+```
+
+Then in another shell:
 
 ```bash
 cd macos
@@ -51,19 +84,55 @@ xcodegen generate
 open Speedy.xcodeproj            # ⌘R in Xcode
 ```
 
-On first launch macOS will prompt for Accessibility — grant it via System Settings → Privacy & Security → Accessibility. Once granted, double-tap **Control** anywhere on the system; the menu-bar bolt icon should briefly fill, then return to its outline state. That's the trigger that PR 7 will use to capture selected text.
+The macOS app will hit `http://localhost:8000/search` by default. To point at a different backend (e.g. a Railway deploy), set `SPEEDY_BACKEND_URL` in the Xcode scheme's environment variables.
 
-If the prompt was dismissed without granting, toggle the Speedy entry off and on in System Settings; the app polls trust state once a second and starts the monitor as soon as it flips.
+On first launch macOS will prompt for Accessibility — grant it via System Settings → Privacy & Security → Accessibility. Once granted:
+
+1. Select some text in any app (Safari, Notes, Slack, a PDF).
+2. Double-tap **Control** anywhere on the system.
+3. The menu-bar bolt icon flashes for ~250ms, **and** a small floating panel appears next to the cursor showing the captured text + a "Searching markets…" row that resolves to either a market card (with score) or "No tradeable market" once `/search` returns.
+4. The panel dismisses on **Esc**, on **click-outside**, or after **8 seconds** of idle.
+
+In the Xcode console (⌘⇧Y) you'll also see:
+```
+Speedy: captured via accessibility — Powell signaled patience on rate cuts
+```
+
+## Running tests
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer  # one-time
+cd macos
+swift test
+```
+
+CI runs `swift test` on `macos-15` so the test target is exercised on every push.
+
+If you tried it from an Electron app (Slack, Notion, Discord, VS Code), expect `via pasteboard` instead — the same text, just routed through a synthetic ⌘C with the clipboard restored within ~100ms.
+
+If the Accessibility prompt was dismissed without granting, toggle the Speedy entry off and on in System Settings; the app polls trust state once a second and starts the monitor as soon as it flips.
+
+### "AX is on, but the hotkey doesn't fire"
+
+macOS pins Accessibility trust to a binary's **code signature**, not its bundle id. Every ad-hoc dev build (`CODE_SIGN_IDENTITY="-"`) produces a new signature, so the "Speedy" entry you see toggled on is for a *previous* build. The current binary has no matching trust entry and `AXIsProcessTrusted()` returns `false` even though the entry looks correct.
+
+Reset it cleanly:
+
+```bash
+tccutil reset Accessibility tech.nuff.speedy
+```
+
+Then **⌘.** + **⌘R** in Xcode. A fresh prompt appears — grant it. The new signature gets a fresh trust entry and the polling timer flips within ~1s.
+
+You'll need this every time the binary signature changes meaningfully (e.g. after long pauses between builds, switching machines, or signing-config changes). Once we have a real Developer ID signature in PR 15, this stops being an issue.
 
 ## What's in this PR vs. later
 
-Hotkey detection only — no selection capture, no overlay. The flash is throwaway feedback so PR 6 is independently demoable; it's replaced by the cursor-anchored overlay in PR 8.
+Capture only. Nothing is sent to the backend yet — the captured text is logged so you can verify the pipeline. Wiring the result into a `/search` request lands in PR 13; the cursor-anchored overlay in PR 8.
 
 ## Status
 
 Subsequent PRs add:
-
-- Accessibility-API selection capture with pasteboard fallback (PR 7)
 - Cursor-anchored `NSPanel` overlay (PR 8)
 - Full design-system port — Inter, JetBrains Mono, materials (PR 9)
 - Privy onboarding via `WKWebView` (PR 10)

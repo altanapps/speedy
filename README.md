@@ -8,7 +8,52 @@ The product thesis: the bottleneck on retail prediction-market trading isn't dec
 
 ## Status
 
-Pre-MVP. PRD locked, design system + working web prototype shipped, native build not yet started.
+Pre-MVP, runnable end-to-end on a developer machine. PRD locked, retrieval pipeline + macOS app + cursor-anchored overlay shipped. No trading path yet (PRs 10–12).
+
+## Run it locally
+
+You need: macOS 13+, Xcode, Homebrew, Python 3.11+, an OpenAI API key.
+
+```bash
+git clone https://github.com/altanapps/speedy.git
+cd speedy
+```
+
+**Backend** (one-shot setup, then refresh + serve):
+
+```bash
+cd backend
+make setup                       # brew installs postgres@17 + pgvector, creates the speedy db, runs migrations, creates .env
+
+# put your OpenAI key in backend/.env (it's gitignored):
+#   OPENAI_API_KEY=sk-...
+# get one at https://platform.openai.com/api-keys
+
+make refresh                     # pulls Polymarket markets + embeds them (~5–15 min, ~$0.10 in OpenAI charges)
+make serve                       # runs uvicorn on :8000 — leave it running
+```
+
+If anything goes sideways: `make doctor` prints a one-screen diagnostic.
+
+**macOS app** (separate terminal):
+
+```bash
+cd macos
+brew install xcodegen            # one-time
+xcodegen generate
+open Speedy.xcodeproj
+```
+
+In Xcode:
+
+1. Select the **Speedy** target → **Signing & Capabilities** → tick **Automatically manage signing** → pick your **Personal Team** (free, just your Apple ID — no Developer Program needed). This is required so macOS Accessibility trust persists across rebuilds.
+2. ⌘R to run.
+3. macOS prompts for Accessibility permission — grant via System Settings → Privacy & Security → Accessibility, toggle Speedy on.
+4. Highlight text anywhere, double-tap **Control**.
+
+A floating panel appears at your cursor with the matched Polymarket market. Esc / click-outside / 8s idle to dismiss.
+
+If the hotkey doesn't fire after granting Accessibility, see `macos/README.md` § "AX is on, but the hotkey doesn't fire" — this can happen when the trust entry is bound to a previous build's signature.
 
 ## Layout
 

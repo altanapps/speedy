@@ -32,5 +32,12 @@
     <false/>
     <key>NSSupportsSuddenTermination</key>
     <false/>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- Lets the dev build talk to localhost over plain HTTP. Production
+             HTTPS is unaffected. -->
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
 </dict>
 </plist>
