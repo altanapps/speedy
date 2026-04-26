@@ -26,6 +26,10 @@ final class OverlayController {
     private var localKeyMonitor: Any?
     private var clickMonitor: Any?
     private var idleTimer: Timer?
+    /// State-specific auto-dismiss. Currently fires only for `.noMatch` —
+    /// the user already understands "no market found" the moment they read
+    /// it; keeping the panel up just so they have to hit Esc is friction.
+    private var autoDismissTimer: Timer?
 
     // Per-show trade state. Reset on each `show(_:)` call.
     private var currentSelection: Selection?
@@ -114,6 +118,8 @@ final class OverlayController {
         orderTask = nil
         idleTimer?.invalidate()
         idleTimer = nil
+        autoDismissTimer?.invalidate()
+        autoDismissTimer = nil
         removeDismissMonitors()
         panel?.orderOut(nil)
         pinnedTopLeft = nil
@@ -230,6 +236,27 @@ final class OverlayController {
         let origin = CGPoint(x: topLeft.x, y: topLeft.y - size.height)
         panel.setFrameOrigin(origin)
         panel.orderFrontRegardless()
+
+        scheduleAutoDismiss(for: status)
+    }
+
+    /// Per-status auto-dismiss. Cancels any prior timer on each render —
+    /// transitioning out of `.noMatch` into `.placing` keeps the panel up.
+    private func scheduleAutoDismiss(for status: OverlayStatus) {
+        autoDismissTimer?.invalidate()
+        autoDismissTimer = nil
+        let delay: TimeInterval? = {
+            switch status {
+            case .noMatch: return 2.0
+            default: return nil
+            }
+        }()
+        guard let delay else { return }
+        autoDismissTimer = Timer.scheduledTimer(
+            withTimeInterval: delay, repeats: false
+        ) { [weak self] _ in
+            Task { @MainActor in self?.dismiss() }
+        }
     }
 
     private static func describe(_ error: SearchError) -> String {
