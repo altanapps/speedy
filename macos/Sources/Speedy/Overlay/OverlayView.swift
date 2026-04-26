@@ -378,3 +378,50 @@ private struct NoMatchDot: View {
             .frame(width: 6, height: 6)
     }
 }
+
+// MARK: - Previews
+
+#if DEBUG
+private let _previewSelection = Selection(
+    highlight: "Powell signaled patience on rate cuts at the March FOMC meeting",
+    surroundingContext: nil,
+    pageTitle: "FT — Fed Minutes",
+    source: .accessibility
+)
+
+private let _previewMarket = MatchedMarket(
+    id: "fed-may-2026",
+    slug: "will-the-fed-cut-rates-in-may-2026",
+    question: "Will the Fed cut rates at the May 2026 FOMC meeting?",
+    description: nil,
+    endDate: Date(timeIntervalSinceNow: 86_400 * 14),
+    category: "Macro",
+    tags: ["fed", "rates"]
+)
+
+struct OverlayView_Previews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            OverlayView(selection: _previewSelection, status: .searching)
+                .previewDisplayName("Searching")
+
+            OverlayView(
+                selection: _previewSelection,
+                status: .matched(_previewMarket, score: 0.71)
+            )
+            .previewDisplayName("Matched")
+
+            OverlayView(selection: _previewSelection, status: .noMatch(threshold: 0.55))
+                .previewDisplayName("No match")
+
+            OverlayView(
+                selection: _previewSelection,
+                status: .error("Couldn't reach Speedy backend (Connection refused)")
+            )
+            .previewDisplayName("Error")
+        }
+        .padding(40)
+        .background(.black.opacity(0.5))
+    }
+}
+#endif
