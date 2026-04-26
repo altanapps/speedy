@@ -104,7 +104,11 @@ final class MenuBarController: NSObject {
         description: nil,
         endDate: Date(timeIntervalSinceNow: 86_400 * 14),
         category: "Macro",
-        tags: ["fed", "rates"]
+        tags: ["fed", "rates"],
+        yesPrice: 0.62,
+        noPrice: 0.38,
+        volume24h: 1_245_000,
+        pricesUpdatedAt: Date()
     )
 
     @objc private func previewSearching() {

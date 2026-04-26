@@ -38,6 +38,10 @@ class MatchedMarket(BaseModel):
     end_date: datetime | None
     category: str | None
     tags: list[str] | None
+    yes_price: float | None
+    no_price: float | None
+    volume_24h: float | None
+    prices_updated_at: datetime | None
 
 
 class SearchResponse(BaseModel):
@@ -106,6 +110,10 @@ async def search_endpoint(
             end_date=m.end_date,
             category=m.category,
             tags=m.tags,
+            yes_price=float(m.yes_price) if m.yes_price is not None else None,
+            no_price=float(m.no_price) if m.no_price is not None else None,
+            volume_24h=float(m.volume_24h) if m.volume_24h is not None else None,
+            prices_updated_at=m.prices_updated_at,
         ),
         score=hit.score,
         threshold=threshold,

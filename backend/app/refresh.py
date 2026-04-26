@@ -75,7 +75,10 @@ async def _read_prior_state(
 async def _upsert_metadata(session: AsyncSession, markets: list[GammaMarket]) -> None:
     """Upsert everything except source_hash + embedding (those are written after
     the embed pass). Lets a partially-failed cycle retry without re-embedding
-    rows whose hash is already current."""
+    rows whose hash is already current.
+
+    Live state (prices, volume) is written here too — it changes every cycle
+    independent of the embedding inputs."""
     if not markets:
         return
     update_cols_keys = (
@@ -86,8 +89,13 @@ async def _upsert_metadata(session: AsyncSession, markets: list[GammaMarket]) ->
         "active",
         "category",
         "tags",
+        "yes_price",
+        "no_price",
+        "volume_24h",
+        "prices_updated_at",
     )
-    # 8 columns per row × 1000 rows = 8000 params, well under asyncpg's 32767.
+    now = datetime.now(UTC)
+    # 12 columns per row × 1000 rows = 12000 params, under asyncpg's 32767.
     for chunk in _chunks(markets, _DB_BATCH):
         stmt = pg_insert(Market).values(
             [
@@ -100,6 +108,10 @@ async def _upsert_metadata(session: AsyncSession, markets: list[GammaMarket]) ->
                     "active": True,
                     "category": m.category,
                     "tags": m.tags or None,
+                    "yes_price": m.yes_price,
+                    "no_price": m.no_price,
+                    "volume_24h": m.volume_24h,
+                    "prices_updated_at": now if m.yes_price is not None else None,
                 }
                 for m in chunk
             ]
