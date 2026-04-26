@@ -279,6 +279,10 @@ final class OverlayController {
     private func installDismissMonitors() {
         removeDismissMonitors()
 
+        // Esc is the *only* way to dismiss the overlay. Click-outside +
+        // idle-timeout were both removed — users were losing the panel
+        // mid-edit when they clicked into another app to look something up.
+        // ⌘↵ still submits a trade.
         let keyHandler: (NSEvent) -> Void = { [weak self] event in
             // 53 = kVK_Escape  → dismiss.
             // 36 = kVK_Return with ⌘ → submit (only meaningful when matched).
@@ -290,18 +294,6 @@ final class OverlayController {
         }
         keyMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.keyDown], handler: keyHandler
-        )
-
-        let clickHandler: (NSEvent) -> Void = { [weak self] _ in
-            guard let self, let panel = self.panel else { return }
-            let clickLocation = NSEvent.mouseLocation
-            if !panel.frame.contains(clickLocation) {
-                Task { @MainActor in self.dismiss() }
-            }
-        }
-        clickMonitor = NSEvent.addGlobalMonitorForEvents(
-            matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown],
-            handler: clickHandler
         )
     }
 
@@ -316,12 +308,13 @@ final class OverlayController {
         }
     }
 
+    /// No-op. The idle auto-dismiss was removed — the overlay only goes
+    /// away when the user explicitly hits Esc (or after a successful order
+    /// submission, if you wire that elsewhere). Kept the call sites + this
+    /// stub so the next behavioral change (e.g. dismiss-on-success) only
+    /// touches one place.
     private func restartIdleTimer() {
         idleTimer?.invalidate()
-        idleTimer = Timer.scheduledTimer(
-            withTimeInterval: Self.idleTimeout, repeats: false
-        ) { [weak self] _ in
-            Task { @MainActor in self?.dismiss() }
-        }
+        idleTimer = nil
     }
 }
