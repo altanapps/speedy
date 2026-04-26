@@ -199,14 +199,16 @@ struct OverlayView: View {
         } label: {
             HStack(spacing: 4) {
                 Text(label)
-                    .font(Speedy.Font.inter(10, weight: .medium))
+                    .font(Speedy.Font.inter(11, weight: .medium))
                 Image(systemName: "arrow.up.right")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
             }
-            .foregroundStyle(Speedy.ColorToken.purpleTint)
+            // Full-saturation purple, not the 18%-alpha tint variant —
+            // tints are for backgrounds, not text on dark glass.
+            .foregroundStyle(Speedy.ColorToken.purple)
         }
         .buttonStyle(.plain)
-        .padding(.top, 1)
+        .padding(.top, 2)
     }
 
     /// YES 62¢   NO 38¢ — mono numerics, label tracking matches the design
