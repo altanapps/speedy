@@ -34,6 +34,9 @@ def _gm(market_id: str, question: str = "q?", description: str = "d") -> GammaMa
         active=True,
         category="Macro",
         tags=["a"],
+        condition_id=f"0x{market_id.zfill(64)}",
+        clob_token_yes=f"yes-{market_id}",
+        clob_token_no=f"no-{market_id}",
     )
 
 

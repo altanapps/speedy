@@ -1,8 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// Owns the floating overlay panel: lifecycle, placement, dismissal, and the
-/// in-flight search.
+/// Owns the floating overlay panel: lifecycle, placement, dismissal, the
+/// in-flight search, and (PR 10–12) order submission.
 ///
 /// One panel is reused across hotkey fires. A fresh fire cancels any
 /// previous search-in-flight before kicking off a new one — otherwise a slow
@@ -12,24 +12,40 @@ import SwiftUI
 final class OverlayController {
     private static let initialSize = CGSize(width: 340, height: 140)
     private static let idleTimeout: TimeInterval = 8.0
+    private static let defaultSizeUSDC = "5"
 
     private let searchClient: SearchClient
+    private let orderClient: OrderClient
 
     private var panel: OverlayPanel?
     private var hostingView: NSHostingView<OverlayView>?
 
     private var searchTask: Task<Void, Never>?
+    private var orderTask: Task<Void, Never>?
     private var keyMonitor: Any?
     private var clickMonitor: Any?
     private var idleTimer: Timer?
 
-    init(searchClient: SearchClient) {
+    // Per-show trade state. Reset on each `show(_:)` call.
+    private var currentSelection: Selection?
+    private var matchedMarket: MatchedMarket?
+    private var outcome: OrderRequest.Outcome = .yes
+    private var sizeText: String = OverlayController.defaultSizeUSDC
+
+    init(searchClient: SearchClient, orderClient: OrderClient) {
         self.searchClient = searchClient
+        self.orderClient = orderClient
     }
 
     func show(_ selection: Selection) {
         searchTask?.cancel()
-        render(selection: selection, status: .searching)
+        orderTask?.cancel()
+        currentSelection = selection
+        matchedMarket = nil
+        outcome = .yes
+        sizeText = Self.defaultSizeUSDC
+
+        render(status: .searching)
         installDismissMonitors()
         restartIdleTimer()
 
@@ -37,21 +53,20 @@ final class OverlayController {
             do {
                 let outcome = try await searchClient.search(selection)
                 guard !Task.isCancelled else { return }
-                let status: OverlayStatus = {
-                    switch outcome {
-                    case let .matched(market, score, _):
-                        return .matched(market, score: score)
-                    case let .noMatch(_, threshold):
-                        return .noMatch(threshold: threshold)
-                    }
-                }()
-                self?.render(selection: selection, status: status)
+                guard let self else { return }
+                switch outcome {
+                case let .matched(market, score, _):
+                    self.matchedMarket = market
+                    self.render(status: .matched(market, score: score))
+                case let .noMatch(_, threshold):
+                    self.render(status: .noMatch(threshold: threshold))
+                }
             } catch let error as SearchError {
                 guard !Task.isCancelled else { return }
-                self?.render(selection: selection, status: .error(Self.describe(error)))
+                self?.render(status: .error(Self.describe(error)))
             } catch {
                 guard !Task.isCancelled else { return }
-                self?.render(selection: selection, status: .error(error.localizedDescription))
+                self?.render(status: .error(error.localizedDescription))
             }
         }
     }
@@ -61,7 +76,15 @@ final class OverlayController {
     /// checked without AX trust or a real search round-trip.
     func showPreview(selection: Selection, status: OverlayStatus) {
         searchTask?.cancel()
-        render(selection: selection, status: status)
+        currentSelection = selection
+        // Keep matchedMarket in sync if previewing a matched state, so
+        // TradeControls bind correctly in preview mode too.
+        if case let .matched(market, _) = status {
+            matchedMarket = market
+        } else {
+            matchedMarket = nil
+        }
+        render(status: status)
         installDismissMonitors()
         restartIdleTimer()
     }
@@ -69,19 +92,88 @@ final class OverlayController {
     func dismiss() {
         searchTask?.cancel()
         searchTask = nil
+        orderTask?.cancel()
+        orderTask = nil
         idleTimer?.invalidate()
         idleTimer = nil
         removeDismissMonitors()
         panel?.orderOut(nil)
     }
 
+    // MARK: - Order submission
+
+    /// Triggered by the Buy button or ⌘↵. No-ops unless we're in a matched
+    /// state with a valid size and no order already in flight.
+    func submitOrder() {
+        guard orderTask == nil else { return }
+        guard let market = matchedMarket else { return }
+        guard let size = Self.parseSize(sizeText) else { return }
+
+        // Cancelling search is fine — even if it's still running, we already
+        // have the matched market. Keep the idle timer alive so a successful
+        // place still auto-dismisses after the timeout.
+        let request = OrderRequest(
+            marketId: market.id,
+            outcome: outcome,
+            sizeUsdc: size,
+            side: .buy
+        )
+        render(status: .placing)
+        restartIdleTimer()
+
+        orderTask = Task { [weak self, orderClient] in
+            defer { Task { @MainActor in self?.orderTask = nil } }
+            do {
+                let response = try await orderClient.placeOrder(request)
+                guard !Task.isCancelled else { return }
+                let id = response.orderId ?? response.transactionHash ?? "?"
+                self?.render(status: .placed(orderId: id))
+            } catch let error as OrderError {
+                guard !Task.isCancelled else { return }
+                self?.render(status: .orderError(Self.describe(error)))
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.render(status: .orderError(error.localizedDescription))
+            }
+        }
+    }
+
     // MARK: - Render
 
-    private func render(selection: Selection, status: OverlayStatus) {
+    private func render(status: OverlayStatus) {
+        guard let selection = currentSelection else { return }
         let panel = panel ?? makePanel()
         self.panel = panel
 
-        let view = OverlayView(selection: selection, status: status)
+        // Build the TradeControlsConfig only when we're actually matched —
+        // OverlayView won't render TradeControls otherwise. Bindings are
+        // synthesised from this controller's state so toggling Yes/No or
+        // editing the size flows back here without SwiftUI @State.
+        let config: TradeControlsConfig?
+        if case .matched = status {
+            config = TradeControlsConfig(
+                outcome: Binding(
+                    get: { [weak self] in self?.outcome ?? .yes },
+                    set: { [weak self] new in
+                        self?.outcome = new
+                        // Re-render so the segmented control reflects the new state.
+                        self?.render(status: status)
+                    }
+                ),
+                sizeText: Binding(
+                    get: { [weak self] in self?.sizeText ?? Self.defaultSizeUSDC },
+                    set: { [weak self] new in
+                        self?.sizeText = new
+                        self?.render(status: status)
+                    }
+                ),
+                onSubmit: { [weak self] in self?.submitOrder() }
+            )
+        } else {
+            config = nil
+        }
+
+        let view = OverlayView(selection: selection, status: status, tradeControls: config)
         let hosting: NSHostingView<OverlayView>
         if let hostingView {
             hostingView.rootView = view
@@ -113,6 +205,28 @@ final class OverlayController {
         }
     }
 
+    private static func describe(_ error: OrderError) -> String {
+        switch error {
+        case let .transport(message):
+            return "couldn't reach backend (\(message))"
+        case let .http(status, message):
+            if let m = message, !m.isEmpty { return "HTTP \(status): \(m)" }
+            return "HTTP \(status)"
+        case let .decode(message):
+            return "bad response (\(message))"
+        case let .rejected(message):
+            return message
+        case let .credentialsMissing(message):
+            return message
+        }
+    }
+
+    private static func parseSize(_ text: String) -> Double? {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard let value = Double(trimmed), value > 0 else { return nil }
+        return value
+    }
+
     // MARK: - Panel construction
 
     private func makePanel() -> OverlayPanel {
@@ -134,15 +248,18 @@ final class OverlayController {
         )
     }
 
-    // MARK: - Dismissal
+    // MARK: - Dismissal & key handling
 
     private func installDismissMonitors() {
         removeDismissMonitors()
 
         let keyHandler: (NSEvent) -> Void = { [weak self] event in
-            // 53 = kVK_Escape
+            // 53 = kVK_Escape  → dismiss.
+            // 36 = kVK_Return with ⌘ → submit (only meaningful when matched).
             if event.keyCode == 53 {
                 Task { @MainActor in self?.dismiss() }
+            } else if event.keyCode == 36, event.modifierFlags.contains(.command) {
+                Task { @MainActor in self?.submitOrder() }
             }
         }
         keyMonitor = NSEvent.addGlobalMonitorForEvents(

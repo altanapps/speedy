@@ -10,7 +10,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menuBar = MenuBarController()
         self.menuBar = menuBar
 
-        let overlay = OverlayController(searchClient: HTTPSearchClient())
+        let overlay = OverlayController(
+            searchClient: HTTPSearchClient(),
+            orderClient: HTTPOrderClient()
+        )
         self.overlay = overlay
 
         // Wire the menu-bar's preview hook so users can see overlay visuals

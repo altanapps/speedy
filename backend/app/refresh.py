@@ -93,9 +93,12 @@ async def _upsert_metadata(session: AsyncSession, markets: list[GammaMarket]) ->
         "no_price",
         "volume_24h",
         "prices_updated_at",
+        "condition_id",
+        "clob_token_yes",
+        "clob_token_no",
     )
     now = datetime.now(UTC)
-    # 12 columns per row × 1000 rows = 12000 params, under asyncpg's 32767.
+    # 15 columns per row × 1000 rows = 15000 params, under asyncpg's 32767.
     for chunk in _chunks(markets, _DB_BATCH):
         stmt = pg_insert(Market).values(
             [
@@ -112,6 +115,9 @@ async def _upsert_metadata(session: AsyncSession, markets: list[GammaMarket]) ->
                     "no_price": m.no_price,
                     "volume_24h": m.volume_24h,
                     "prices_updated_at": now if m.yes_price is not None else None,
+                    "condition_id": m.condition_id,
+                    "clob_token_yes": m.clob_token_yes,
+                    "clob_token_no": m.clob_token_no,
                 }
                 for m in chunk
             ]

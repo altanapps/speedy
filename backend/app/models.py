@@ -30,6 +30,14 @@ class Market(Base):
     category: Mapped[str | None] = mapped_column(Text)
     tags: Mapped[list[str] | None] = mapped_column(JSONB)
 
+    # CLOB trading identifiers — populated by the refresh job from Gamma's
+    # `conditionId` and `clobTokenIds`. Nullable so old rows / markets without
+    # CLOB tokens (rare, but possible for Gamma-only markets) don't block
+    # ingest. The /order endpoint refuses to trade a market missing these.
+    condition_id: Mapped[str | None] = mapped_column(Text)
+    clob_token_yes: Mapped[str | None] = mapped_column(Text)
+    clob_token_no: Mapped[str | None] = mapped_column(Text)
+
     # Hash of the inputs that go into the embedding text. We re-embed only when
     # this changes — saves OpenAI calls on the 5-minute refresh.
     source_hash: Mapped[str | None] = mapped_column(Text)
