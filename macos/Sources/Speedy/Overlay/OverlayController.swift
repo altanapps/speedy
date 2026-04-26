@@ -32,6 +32,12 @@ final class OverlayController {
     private var outcome: OrderRequest.Outcome = .yes
     private var sizeText: String = OverlayController.defaultSizeUSDC
 
+    /// Anchor pinned at first render of each `show()`. Subsequent re-renders
+    /// (e.g. typing in the size field, toggling Yes/No) reuse this so the
+    /// panel doesn't jump to the cursor's new location while the user is
+    /// interacting with it.
+    private var pinnedOrigin: CGPoint?
+
     init(searchClient: SearchClient, orderClient: OrderClient) {
         self.searchClient = searchClient
         self.orderClient = orderClient
@@ -44,6 +50,7 @@ final class OverlayController {
         matchedMarket = nil
         outcome = .yes
         sizeText = Self.defaultSizeUSDC
+        pinnedOrigin = nil  // re-anchor on the first render of this show()
 
         render(status: .searching)
         installDismissMonitors()
@@ -77,6 +84,7 @@ final class OverlayController {
     func showPreview(selection: Selection, status: OverlayStatus) {
         searchTask?.cancel()
         currentSelection = selection
+        pinnedOrigin = nil  // re-anchor on the first render of this preview
         // Keep matchedMarket in sync if previewing a matched state, so
         // TradeControls bind correctly in preview mode too.
         if case let .matched(market, _) = status {
@@ -98,6 +106,7 @@ final class OverlayController {
         idleTimer = nil
         removeDismissMonitors()
         panel?.orderOut(nil)
+        pinnedOrigin = nil
     }
 
     // MARK: - Order submission
@@ -189,7 +198,17 @@ final class OverlayController {
         // and caused -layoutSubtreeIfNeeded recursion.
         let size = hosting.fittingSize
         panel.setContentSize(size)
-        let origin = computeOrigin(panelSize: panel.frame.size)
+        // Pin the origin on the first render of each show()/showPreview().
+        // Subsequent re-renders (typing in the size field, toggling Yes/No)
+        // reuse it — the panel stays put while the user interacts with it.
+        // It only repositions on the next fresh hotkey fire.
+        let origin: CGPoint
+        if let pinned = pinnedOrigin {
+            origin = pinned
+        } else {
+            origin = computeOrigin(panelSize: size)
+            pinnedOrigin = origin
+        }
         panel.setFrameOrigin(origin)
         panel.orderFrontRegardless()
     }
