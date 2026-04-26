@@ -13,6 +13,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let overlay = OverlayController(searchClient: HTTPSearchClient())
         self.overlay = overlay
 
+        // Wire the menu-bar's preview hook so users can see overlay visuals
+        // without AX trust or a working hotkey path. Always on for now —
+        // makes design QA cheap.
+        menuBar.previewOverlay = { [weak overlay] selection, status in
+            Task { @MainActor in
+                overlay?.showPreview(selection: selection, status: status)
+            }
+        }
+
         let hotkey = HotkeyMonitor { [weak menuBar, weak overlay] in
             menuBar?.flash()
             Task { @MainActor in

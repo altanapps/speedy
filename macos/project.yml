@@ -21,6 +21,9 @@ targets:
     platform: macOS
     sources:
       - path: Sources/Speedy
+      - path: Resources/Fonts
+        buildPhase: resources
+        type: folder
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: tech.nuff.speedy
