@@ -1,8 +1,8 @@
 """market clob ids: condition_id, clob_token_yes, clob_token_no
 
-Revision ID: 0003
-Revises: 0002
-Create Date: 2026-04-25
+Revision ID: 0004
+Revises: 0003
+Create Date: 2026-04-26
 
 CLOB needs the on-chain condition_id and the YES/NO clobTokenIds to place
 orders. Gamma returns these alongside the market metadata; we store them so
@@ -16,8 +16,8 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "0003"
-down_revision: str | None = "0002"
+revision: str = "0004"
+down_revision: str | None = "0003"
 branch_labels = None
 depends_on = None
 
