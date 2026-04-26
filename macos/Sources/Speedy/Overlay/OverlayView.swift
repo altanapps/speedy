@@ -165,6 +165,8 @@ struct OverlayView: View {
 
             metaRow(market: market)
 
+            polymarketLink(slug: market.slug, label: "View on Polymarket")
+
             if let cfg = tradeControls {
                 Divider()
                     .background(Speedy.ColorToken.separator)
@@ -180,6 +182,31 @@ struct OverlayView: View {
         .padding(.horizontal, 14)
         .padding(.top, 11)
         .padding(.bottom, 12)
+    }
+
+    /// Subtle "↗ View on Polymarket" link. Used both in the matched state
+    /// (deep-links to the specific market) and the placed state (links to
+    /// the user's portfolio so they can verify the position landed).
+    private func polymarketLink(slug: String?, label: String) -> some View {
+        let url: URL? = {
+            if let slug, !slug.isEmpty {
+                return URL(string: "https://polymarket.com/event/\(slug)")
+            }
+            return URL(string: "https://polymarket.com/portfolio")
+        }()
+        return Button {
+            if let url { NSWorkspace.shared.open(url) }
+        } label: {
+            HStack(spacing: 4) {
+                Text(label)
+                    .font(Speedy.Font.inter(10, weight: .medium))
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .foregroundStyle(Speedy.ColorToken.purpleTint)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 1)
     }
 
     /// YES 62¢   NO 38¢ — mono numerics, label tracking matches the design
@@ -304,6 +331,7 @@ struct OverlayView: View {
                     .font(Speedy.Font.mono(11))
                     .foregroundStyle(Speedy.ColorToken.labelSecondary)
                     .lineLimit(1)
+                polymarketLink(slug: nil, label: "View positions on Polymarket")
             case let .orderError(message):
                 HStack(spacing: 8) {
                     Circle()
