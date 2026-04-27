@@ -47,3 +47,6 @@ secrets/
 # Raw video recordings — only the converted demo GIF in docs/ ships
 *.mp4
 *.mov
+
+# Claude Code tooling (per-worktree state, agent worktrees, etc.)
+.claude/
