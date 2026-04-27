@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Speedy — Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --speedy-purple:#7C5CFF;
+    --green:#30D158;
+    --red:#FF453A;
+    --label:rgba(255,255,255,0.96);
+    --label-secondary:rgba(255,255,255,0.62);
+    --label-tertiary:rgba(255,255,255,0.40);
+    --separator:rgba(255,255,255,0.08);
+    --separator-strong:rgba(255,255,255,0.14);
+    --fill:rgba(255,255,255,0.08);
+  }
+  html,body{margin:0;padding:0}
+  body{
+    width:1600px;height:1100px;
+    background:
+      radial-gradient(900px 700px at 90% 0%, rgba(124,92,255,0.32), transparent 60%),
+      radial-gradient(700px 500px at 0% 100%, rgba(255,120,80,0.10), transparent 55%),
+      linear-gradient(160deg,#100B22 0%, #0B0B0E 60%);
+    font-family:'Inter',-apple-system,system-ui,sans-serif;
+    color:var(--label);
+    -webkit-font-smoothing:antialiased;
+    letter-spacing:-0.005em;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* macOS menu bar */
+  .menubar{
+    position:absolute;top:0;left:0;right:0;height:32px;
+    background:rgba(0,0,0,0.42);
+    backdrop-filter:blur(20px) saturate(180%);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
+    border-bottom:0.5px solid rgba(255,255,255,0.06);
+    display:flex;align-items:center;padding:0 18px;gap:18px;
+    font-size:13px;color:rgba(255,255,255,0.86);
+    z-index:5;
+  }
+  .menubar .app-name{font-weight:600}
+  .menubar .menu-item{color:rgba(255,255,255,0.72)}
+  .menubar .right{margin-left:auto;display:flex;align-items:center;gap:14px;color:rgba(255,255,255,0.86);font-family:'JetBrains Mono',monospace;font-size:12px}
+  .menubar .speedy-mb{
+    display:flex;align-items:center;gap:6px;
+    padding:3px 8px;border-radius:6px;
+    background:rgba(124,92,255,0.18);border:0.5px solid rgba(124,92,255,0.32);
+    color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;
+  }
+  .menubar .speedy-mb svg{width:11px;height:11px}
+  .menubar .speedy-mb .pnl{color:#7af0a0;font-family:'JetBrains Mono',monospace}
+
+  /* Top-corner brand */
+  .brand{
+    position:absolute;left:60px;top:64px;display:flex;align-items:center;gap:14px;z-index:6;
+  }
+  .brand .mark{
+    width:56px;height:56px;border-radius:14px;
+    background:linear-gradient(160deg,#8E72FF 0%, #7C5CFF 50%, #5E3FE0 100%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 12px 24px rgba(94,63,224,0.45), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -2px 0 rgba(0,0,0,0.18), inset 0 0 0 0.5px rgba(0,0,0,0.40);
+  }
+  .brand .mark svg{width:32px;height:32px}
+  .brand .name{font-size:26px;font-weight:600;letter-spacing:-0.02em}
+
+  /* Tagline at top-right (compact, doesn't compete with overlay) */
+  .tag{
+    position:absolute;right:60px;top:64px;text-align:right;z-index:6;
+  }
+  .tag h1{
+    margin:0;font-size:48px;font-weight:600;letter-spacing:-0.035em;line-height:1.0;
+  }
+  .tag h1 em{font-style:normal;color:#9b86ff}
+  .tag p{
+    margin:10px 0 0;font-size:15px;color:var(--label-secondary);line-height:1.45;
+    max-width:380px;margin-left:auto;
+  }
+
+  /* Browser window — the article (left side, lower) */
+  .window{
+    position:absolute;left:80px;top:170px;width:880px;height:720px;
+    background:#FAFAF7;color:#1a1a1a;
+    border-radius:14px;
+    box-shadow:0 60px 120px rgba(0,0,0,0.55), 0 20px 40px rgba(0,0,0,0.35), inset 0 0 0 0.5px rgba(255,255,255,0.06);
+    overflow:hidden;
+    transform:rotate(-1.5deg);
+    z-index:2;
+  }
+  .window .titlebar{
+    height:42px;background:#EDEDE7;display:flex;align-items:center;padding:0 16px;
+    border-bottom:0.5px solid rgba(0,0,0,0.06);
+  }
+  .traffic{display:flex;gap:8px}
+  .traffic span{width:12px;height:12px;border-radius:50%;display:block}
+  .traffic .r{background:#FF5F57}
+  .traffic .y{background:#FEBC2E}
+  .traffic .g{background:#28C840}
+  .url{
+    margin:0 auto;display:inline-flex;align-items:center;gap:8px;
+    padding:6px 14px;border-radius:8px;background:#fff;border:0.5px solid rgba(0,0,0,0.08);
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:#555;max-width:480px;
+  }
+  .url .lock{font-size:11px;color:#888}
+
+  .article{padding:48px 72px;font-family:'Source Serif 4', Georgia, serif}
+  .kicker{
+    font-family:'Inter',sans-serif;font-size:12px;letter-spacing:0.16em;
+    text-transform:uppercase;color:#a04a00;font-weight:600;margin-bottom:14px;
+  }
+  .article h1{
+    font-size:40px;line-height:1.08;font-weight:600;letter-spacing:-0.02em;
+    margin:0 0 14px;color:#0a0a0a;
+  }
+  .byline{font-family:'Inter',sans-serif;font-size:13px;color:#666;margin-bottom:28px}
+  .article p{font-size:18px;line-height:1.55;color:#1f1f1f;margin:0 0 18px}
+  .article p .selected{
+    background:rgba(124,92,255,0.32);
+    box-shadow:inset 0 -1px 0 rgba(124,92,255,0.55);
+    color:#0a0a0a;border-radius:2px;padding:1px 0;
+  }
+
+  /* Cursor at the end of the highlight (in absolute coords on the page) */
+  .cursor{
+    position:absolute;
+    /* highlight ends roughly mid-window; place cursor at its end */
+    left:780px;top:560px;
+    width:26px;height:26px;
+    z-index:9;
+    filter:drop-shadow(0 4px 8px rgba(0,0,0,0.45));
+  }
+
+  /* Hotkey hint near cursor */
+  .hotkey{
+    position:absolute;left:716px;top:520px;
+    display:inline-flex;align-items:center;gap:6px;
+    padding:7px 12px;border-radius:999px;
+    background:rgba(28,28,32,0.86);
+    backdrop-filter:blur(20px) saturate(180%);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
+    border:0.5px solid var(--separator-strong);
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,0.86);
+    letter-spacing:0.08em;text-transform:uppercase;
+    box-shadow:0 8px 24px rgba(0,0,0,0.40);
+    z-index:11;
+  }
+  .hotkey .keycap{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:18px;height:18px;padding:0 6px;border-radius:5px;
+    background:rgba(255,255,255,0.10);border:0.5px solid rgba(255,255,255,0.20);
+    font-weight:600;color:#fff;
+  }
+
+  /* Speedy overlay — pops out diagonally from cursor toward bottom-right */
+  .overlay{
+    position:absolute;
+    left:820px;top:600px;
+    width:560px;
+    background:rgba(28,28,32,0.82);
+    backdrop-filter:blur(40px) saturate(180%);
+    -webkit-backdrop-filter:blur(40px) saturate(180%);
+    border-radius:22px;
+    border:1px solid var(--separator-strong);
+    box-shadow:
+      0 60px 120px rgba(0,0,0,0.55),
+      0 20px 40px rgba(0,0,0,0.30),
+      0 0 100px rgba(124,92,255,0.30),
+      inset 0 0 0 0.5px var(--separator-strong);
+    overflow:hidden;
+    z-index:10;
+  }
+  .overlay .row{padding:16px 20px;border-bottom:0.5px solid var(--separator)}
+  .overlay .row:last-child{border-bottom:none}
+  .source{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 9px;border-radius:999px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;
+    letter-spacing:0.10em;text-transform:uppercase;
+  }
+  .pill-brand{
+    background:linear-gradient(160deg,#8E72FF 0%, #7C5CFF 50%, #5E3FE0 100%);
+    color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -1px 0 rgba(0,0,0,0.18), 0 4px 12px rgba(94,63,224,0.45);
+  }
+  .pill-brand svg{width:10px;height:10px}
+  .pill-type{background:rgba(124,92,255,0.18); color:#b6a4ff; border:0.5px solid rgba(124,92,255,0.30)}
+  .pill-venue{background:var(--fill); color:var(--label-secondary); border:0.5px solid var(--separator)}
+  .excerpt{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--label-tertiary);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .excerpt em{color:#b6a4ff;font-style:normal}
+
+  .question{font-size:19px;line-height:1.28;letter-spacing:-0.015em;font-weight:500}
+  .qmeta{display:flex;align-items:center;gap:14px;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--label-tertiary)}
+  .qmeta .price{color:var(--label-secondary)}
+  .qmeta .delta-up{color:var(--green)}
+
+  .side{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .seg{padding:14px;border-radius:10px;border:0.5px solid var(--separator-strong);display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--fill)}
+  .seg .lbl{font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase}
+  .seg .pr{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600}
+  .seg.yes{background:rgba(48,209,88,0.14); border-color:rgba(48,209,88,0.40); color:#7af0a0; box-shadow:0 0 0 2px rgba(48,209,88,0.18)}
+  .seg.no{color:var(--label-secondary)}
+
+  .size{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--fill);border:0.5px solid var(--separator-strong)}
+  .size .dollar{font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--label-tertiary)}
+  .size .amt{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:#fff;flex:1}
+  .size .max{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--label-tertiary);padding:4px 8px;border-radius:5px;background:var(--fill);border:0.5px solid var(--separator)}
+  .chips{display:flex;gap:6px;margin-top:8px}
+  .chip{padding:5px 10px;border-radius:6px;background:var(--fill);border:0.5px solid var(--separator);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--label-secondary)}
+  .chip.active{background:rgba(124,92,255,0.18); color:#b6a4ff; border-color:rgba(124,92,255,0.40)}
+
+  .actions{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center}
+  .btn{padding:13px 16px;border-radius:10px;font-size:13px;font-weight:600;letter-spacing:-0.01em;border:0.5px solid var(--separator-strong);display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn-ghost{background:var(--fill);color:var(--label-secondary)}
+  .btn-confirm{
+    background:linear-gradient(180deg,#8E72FF 0%, #6B4DEF 100%);
+    color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.30), 0 8px 24px rgba(107,77,239,0.40);
+    border-color:rgba(255,255,255,0.18);
+  }
+  .btn-confirm .payout{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,0.78);font-weight:500}
+  .kbd{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;padding:2px 5px;border-radius:4px;background:rgba(0,0,0,0.32);border:0.5px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.78)}
+</style>
+</head>
+<body>
+  <!-- macOS menu bar -->
+  <div class="menubar">
+    <span class="app-name">Safari</span>
+    <span class="menu-item">File</span>
+    <span class="menu-item">Edit</span>
+    <span class="menu-item">View</span>
+    <span class="menu-item">History</span>
+    <div class="right">
+      <span class="speedy-mb">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M58 6 L24 56 L46 56 L40 94 L78 40 L54 40 L62 6 Z" fill="#fff"/></svg>
+        Speedy <span class="pnl">+$284.12</span>
+      </span>
+      <span>100%</span>
+      <span>Sat 25 Apr</span>
+      <span>9:41</span>
+    </div>
+  </div>
+
+  <!-- Top-left brand -->
+  <div class="brand">
+    <div class="mark">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M58 6 L24 56 L46 56 L40 94 L78 40 L54 40 L62 6 Z" fill="#fff"/></svg>
+    </div>
+    <div class="name">Speedy</div>
+  </div>
+
+  <!-- Top-right tagline -->
+  <div class="tag">
+    <h1>Trade <em>where you read.</em></h1>
+    <p>Highlight any sentence. Hold a hotkey. Speedy finds the matching market and places the trade in three seconds.</p>
+  </div>
+
+  <!-- Browser window with article -->
+  <div class="window">
+    <div class="titlebar">
+      <div class="traffic"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="url"><span class="lock">🔒</span> ft.com/content/fed-may-meeting-rate-cut-outlook</div>
+    </div>
+    <div class="article">
+      <div class="kicker">Markets · Federal Reserve</div>
+      <h1>Powell tempers cut expectations ahead of May FOMC</h1>
+      <div class="byline">By Sam Fleming and Colby Smith · 4 min read</div>
+      <p>Investors entered the week pricing in a near-certain rate cut at the Federal Reserve's May 7 meeting, but a measured speech from chair Jay Powell on Monday left rates traders scrambling to recalibrate.</p>
+      <p>Speaking at the Economic Club of Washington, <span class="selected">Powell signaled patience on rate cuts</span>, citing sticky services inflation and a labour market that remains "too tight to be consistent with our 2 per cent objective."</p>
+      <p>Polymarket contracts on a May cut, which had peaked above 80¢ earlier in the month, fell to 62¢ in the minutes after the speech.</p>
+    </div>
+  </div>
+
+  <!-- Hotkey hint near cursor -->
+  <div class="hotkey">
+    <span class="keycap">⌃</span> hold control
+  </div>
+
+  <!-- Cursor at end of highlight -->
+  <svg class="cursor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 2 L3 18 L7.5 14 L10.5 21 L13 20 L10 13 L16 13 Z"
+          fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>
+  </svg>
+
+  <!-- Speedy overlay popping out -->
+  <div class="overlay">
+    <div class="row source">
+      <span class="pill pill-brand">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M58 6 L24 56 L46 56 L40 94 L78 40 L54 40 L62 6 Z" fill="#fff"/></svg>
+        Speedy
+      </span>
+      <span class="pill pill-type">prediction</span>
+      <span class="pill pill-venue">polymarket</span>
+      <span class="excerpt">"<em>Powell signaled patience</em>…"</span>
+    </div>
+    <div class="row">
+      <div class="question">Fed cuts rates at the May 7 FOMC meeting?</div>
+      <div class="qmeta">
+        <span class="price">YES <strong>62¢</strong></span>
+        <span class="delta-up">+4¢ today</span>
+        <span>vol $8.4M</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="side">
+        <div class="seg yes"><div class="lbl">Yes</div><div class="pr">62¢</div></div>
+        <div class="seg no"><div class="lbl">No</div><div class="pr">38¢</div></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="size">
+        <span class="dollar">$</span>
+        <span class="amt">100</span>
+        <span class="max">max $1,612</span>
+      </div>
+      <div class="chips">
+        <span class="chip">$20</span>
+        <span class="chip active">$100</span>
+        <span class="chip">$500</span>
+        <span class="chip">25%</span>
+        <span class="chip">max</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="actions">
+        <button class="btn btn-ghost">Cancel <span class="kbd">esc</span></button>
+        <button class="btn btn-confirm">
+          Buy YES · 161 shares
+          <span class="payout">payout $161.29</span>
+          <span class="kbd">⌘ ↵</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Speedy — Social Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  html,body{margin:0;padding:0}
+  body{
+    width:1200px;height:630px;
+    background:
+      radial-gradient(900px 600px at 110% -10%, rgba(124,92,255,0.28), transparent 55%),
+      radial-gradient(700px 480px at -5% 110%, rgba(124,92,255,0.16), transparent 55%),
+      linear-gradient(180deg,#0B0B0E 0%, #131318 100%);
+    color:#fff;
+    font-family:'Inter',-apple-system,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    letter-spacing:-0.005em;
+    position:relative;
+    overflow:hidden;
+  }
+  .grid{
+    position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(800px 500px at 50% 60%, #000 0%, transparent 75%);
+    -webkit-mask-image:radial-gradient(800px 500px at 50% 60%, #000 0%, transparent 75%);
+  }
+  .frame{
+    position:relative;height:100%;padding:72px 72px;
+    display:flex;flex-direction:column;justify-content:space-between;
+  }
+  .top{display:flex;align-items:center;gap:18px}
+  .mark{
+    width:72px;height:72px;border-radius:18px;
+    background:linear-gradient(160deg,#8E72FF 0%, #7C5CFF 50%, #5E3FE0 100%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:
+      0 10px 22px rgba(94,63,224,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.32),
+      inset 0 -2px 0 rgba(0,0,0,0.18),
+      inset 0 0 0 0.5px rgba(0,0,0,0.40);
+  }
+  .mark svg{width:42px;height:42px;filter:drop-shadow(0 1px 0 rgba(0,0,0,0.22))}
+  .top .name{font-size:34px;font-weight:600;letter-spacing:-0.025em}
+  .pill{
+    margin-left:auto;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 14px 8px 10px;border-radius:999px;
+    background:rgba(255,255,255,0.06);
+    border:0.5px solid rgba(255,255,255,0.14);
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-size:12px;color:rgba(255,255,255,0.7);
+    letter-spacing:0.10em;text-transform:uppercase;
+  }
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:#7C5CFF;box-shadow:0 0 12px #7C5CFF}
+
+  .headline{
+    font-size:108px;font-weight:600;line-height:0.98;letter-spacing:-0.04em;
+    text-wrap:balance;max-width:1000px;
+  }
+  .headline em{font-style:normal;color:#9b86ff}
+  .lede{
+    margin-top:18px;
+    font-size:24px;line-height:1.45;color:rgba(255,255,255,0.62);
+    max-width:760px;text-wrap:pretty;
+  }
+
+  .bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+  .meta{
+    display:flex;align-items:center;gap:18px;
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-size:13px;letter-spacing:0.08em;text-transform:uppercase;
+    color:rgba(255,255,255,0.46);
+  }
+  .meta .sep{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.22)}
+  .url{color:#fff;opacity:0.85}
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="frame">
+    <div class="top">
+      <div class="mark">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <path d="M58 6 L24 56 L46 56 L40 94 L78 40 L54 40 L62 6 Z" fill="#ffffff"/>
+        </svg>
+      </div>
+      <div class="name">Speedy</div>
+      <div class="pill"><span class="dot"></span>macOS · alpha</div>
+    </div>
+
+    <div>
+      <div class="headline">Trade <em>where you read.</em></div>
+      <div class="lede">Highlight a sentence anywhere on your screen, hold a hotkey, and place the trade in three seconds.</div>
+    </div>
+
+    <div class="bottom">
+      <div class="meta">
+        <span>Polymarket</span><span class="sep"></span>
+        <span>Kalshi</span><span class="sep"></span>
+        <span>Hyperliquid</span><span class="sep"></span>
+        <span>IBKR</span>
+      </div>
+      <div class="meta"><span class="url">speedy.app</span></div>
+    </div>
+  </div>
+</body>
+</html>

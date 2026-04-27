@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Speedy — Overlay Close-up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --speedy-purple:#7C5CFF;
+    --bg-system:#0B0B0E;
+    --mat-tint:rgba(28,28,32,0.78);
+    --separator:rgba(255,255,255,0.08);
+    --separator-strong:rgba(255,255,255,0.14);
+    --label:rgba(255,255,255,0.96);
+    --label-secondary:rgba(255,255,255,0.62);
+    --label-tertiary:rgba(255,255,255,0.40);
+    --fill:rgba(255,255,255,0.08);
+    --green:#30D158;
+    --red:#FF453A;
+  }
+  html,body{margin:0;padding:0}
+  body{
+    width:1400px;height:900px;
+    background:
+      radial-gradient(700px 500px at 50% 40%, rgba(124,92,255,0.20), transparent 60%),
+      radial-gradient(900px 600px at 110% 110%, rgba(124,92,255,0.10), transparent 55%),
+      #0B0B0E;
+    font-family:'Inter',-apple-system,system-ui,sans-serif;
+    color:var(--label);
+    -webkit-font-smoothing:antialiased;
+    letter-spacing:-0.005em;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;letter-spacing:0}
+
+  /* Overlay scaled 2× for marketing presence */
+  .overlay{
+    width:640px;
+    background:var(--mat-tint);
+    backdrop-filter:blur(40px) saturate(180%);
+    -webkit-backdrop-filter:blur(40px) saturate(180%);
+    border-radius:28px;
+    border:1px solid var(--separator-strong);
+    box-shadow:
+      0 60px 120px rgba(0,0,0,0.55),
+      0 20px 40px rgba(0,0,0,0.30),
+      0 0 80px rgba(124,92,255,0.18),
+      inset 0 0 0 0.5px var(--separator-strong);
+    overflow:hidden;
+  }
+
+  .row{padding:22px 28px;border-bottom:0.5px solid var(--separator)}
+  .row:last-child{border-bottom:none}
+
+  /* Source row */
+  .source{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:6px 12px;border-radius:999px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;
+    letter-spacing:0.12em;text-transform:uppercase;
+  }
+  .pill-brand{
+    background:linear-gradient(160deg,#8E72FF 0%, #7C5CFF 50%, #5E3FE0 100%);
+    color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -1px 0 rgba(0,0,0,0.18), 0 4px 12px rgba(94,63,224,0.45);
+  }
+  .pill-brand .bolt{width:12px;height:12px}
+  .pill-type{background:rgba(124,92,255,0.18); color:#b6a4ff; border:0.5px solid rgba(124,92,255,0.30)}
+  .pill-venue{background:var(--fill); color:var(--label-secondary); border:0.5px solid var(--separator)}
+  .excerpt{
+    margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:13px;
+    color:var(--label-tertiary);max-width:320px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .excerpt em{color:#b6a4ff;font-style:normal}
+
+  /* Question row */
+  .question{font-size:24px;line-height:1.25;letter-spacing:-0.02em;font-weight:500}
+  .qmeta{display:flex;align-items:center;gap:14px;margin-top:10px;font-size:13px;color:var(--label-tertiary)}
+  .qmeta .mono{font-size:13px}
+  .qmeta .price{color:var(--label-secondary)}
+  .qmeta .delta-up{color:var(--green)}
+
+  /* Side row */
+  .side{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .seg{
+    padding:18px;border-radius:14px;border:0.5px solid var(--separator-strong);
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    background:var(--fill);transition:all 120ms;
+  }
+  .seg .lbl{font-size:14px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase}
+  .seg .price{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600}
+  .seg.yes{
+    background:rgba(48,209,88,0.14);
+    border-color:rgba(48,209,88,0.40);
+    color:#7af0a0;
+    box-shadow:0 0 0 2px rgba(48,209,88,0.18), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .seg.no{color:var(--label-secondary)}
+
+  /* Size row */
+  .size-wrap{display:flex;flex-direction:column;gap:12px}
+  .size{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 16px;border-radius:12px;
+    background:var(--fill); border:0.5px solid var(--separator-strong);
+  }
+  .size .dollar{font-family:'JetBrains Mono',monospace;font-size:22px;color:var(--label-tertiary);font-weight:500}
+  .size input{
+    background:transparent;border:0;outline:0;color:var(--label);
+    font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:600;width:100%;
+    letter-spacing:-0.01em;
+  }
+  .size .max{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.10em;
+    text-transform:uppercase;color:var(--label-tertiary);
+    padding:6px 10px;border-radius:6px;background:var(--fill);border:0.5px solid var(--separator);
+  }
+  .chips{display:flex;gap:8px}
+  .chip{
+    padding:8px 14px;border-radius:8px;
+    background:var(--fill);border:0.5px solid var(--separator);
+    font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--label-secondary);
+    font-weight:500;
+  }
+  .chip.active{background:rgba(124,92,255,0.18); color:#b6a4ff; border-color:rgba(124,92,255,0.40)}
+
+  /* Action row */
+  .actions{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+  .btn{
+    padding:16px 22px;border-radius:12px;
+    font-size:15px;font-weight:600;letter-spacing:-0.01em;
+    border:0.5px solid var(--separator-strong);
+    display:flex;align-items:center;justify-content:center;gap:10px;
+  }
+  .btn-ghost{background:var(--fill);color:var(--label-secondary)}
+  .btn-confirm{
+    background:linear-gradient(180deg,#8E72FF 0%, #6B4DEF 100%);
+    color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.30), 0 8px 24px rgba(107,77,239,0.40);
+    border-color:rgba(255,255,255,0.18);
+  }
+  .btn-confirm .payout{
+    margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:13px;
+    color:rgba(255,255,255,0.78);font-weight:500;
+  }
+  .kbd{
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;
+    padding:3px 6px;border-radius:5px;
+    background:rgba(0,0,0,0.32); border:0.5px solid rgba(255,255,255,0.18);
+    color:rgba(255,255,255,0.78);
+  }
+</style>
+</head>
+<body>
+  <div class="overlay">
+    <!-- Source row -->
+    <div class="row source">
+      <span class="pill pill-brand">
+        <svg class="bolt" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M58 6 L24 56 L46 56 L40 94 L78 40 L54 40 L62 6 Z" fill="#fff"/></svg>
+        Speedy
+      </span>
+      <span class="pill pill-type">prediction</span>
+      <span class="pill pill-venue">polymarket</span>
+      <span class="excerpt">"<em>Powell signaled patience</em> on rate cuts…"</span>
+    </div>
+
+    <!-- Question row -->
+    <div class="row">
+      <div class="question">Fed cuts rates at the May 7 FOMC meeting?</div>
+      <div class="qmeta">
+        <span class="mono price">YES <strong>62¢</strong></span>
+        <span class="mono delta-up">+4¢ today</span>
+        <span class="mono">vol $8.4M</span>
+        <span class="mono">resolves May 7</span>
+      </div>
+    </div>
+
+    <!-- Side row -->
+    <div class="row">
+      <div class="side">
+        <div class="seg yes">
+          <div class="lbl">Yes</div>
+          <div class="price">62¢</div>
+        </div>
+        <div class="seg no">
+          <div class="lbl">No</div>
+          <div class="price">38¢</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Size row -->
+    <div class="row">
+      <div class="size-wrap">
+        <div class="size">
+          <span class="dollar">$</span>
+          <input value="100" />
+          <span class="max">max $1,612</span>
+        </div>
+        <div class="chips">
+          <span class="chip">$20</span>
+          <span class="chip active">$100</span>
+          <span class="chip">$500</span>
+          <span class="chip">25%</span>
+          <span class="chip">max</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action row -->
+    <div class="row">
+      <div class="actions">
+        <button class="btn btn-ghost">Cancel <span class="kbd">esc</span></button>
+        <button class="btn btn-confirm">
+          Buy YES · 161 shares
+          <span class="payout">payout $161.29</span>
+          <span class="kbd">⌘ ↵</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

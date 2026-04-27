@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Speedy — Wordmark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  html,body{margin:0;padding:0}
+  body{
+    width:1600px;height:600px;
+    background:
+      radial-gradient(800px 500px at 80% 30%, rgba(124,92,255,0.18), transparent 60%),
+      radial-gradient(700px 400px at 10% 70%, rgba(124,92,255,0.10), transparent 60%),
+      #0B0B0E;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Inter',-apple-system,system-ui,sans-serif;
+    color:#fff;
+  }
+  .wrap{display:flex;align-items:center;gap:40px}
+  .mark{
+    width:180px;height:180px;border-radius:40px;
+    background:linear-gradient(160deg,#8E72FF 0%, #7C5CFF 50%, #5E3FE0 100%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:
+      0 16px 36px rgba(94,63,224,0.45),
+      inset 0 2px 0 rgba(255,255,255,0.32),
+      inset 0 -3px 0 rgba(0,0,0,0.18),
+      inset 0 0 0 0.5px rgba(0,0,0,0.40);
+    position:relative;
+  }
+  .mark svg{width:104px;height:104px;filter:drop-shadow(0 1px 0 rgba(0,0,0,0.22))}
+  .text{display:flex;flex-direction:column;gap:14px}
+  .name{
+    font-size:160px;font-weight:600;line-height:1;letter-spacing:-0.045em;
+    color:#fff;
+  }
+  .name em{font-style:normal;color:#7C5CFF}
+  .tag{
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-size:18px;letter-spacing:0.18em;text-transform:uppercase;
+    color:rgba(255,255,255,0.46);
+    margin-left:6px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="mark">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M58 6 L24 56 L46 56 L40 94 L78 40 L54 40 L62 6 Z" fill="#ffffff"/>
+      </svg>
+    </div>
+    <div class="text">
+      <div class="name">Speed<em>y</em></div>
+      <div class="tag">trade where you read</div>
+    </div>
+  </div>
+</body>
+</html>

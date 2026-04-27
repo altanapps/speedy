@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Speedy — App Icon</title>
+<style>
+  html,body{margin:0;padding:0;background:transparent}
+  body{width:1024px;height:1024px;display:flex;align-items:center;justify-content:center}
+  .icon{
+    width:1024px;height:1024px;
+    border-radius:228px; /* macOS Big Sur+ squircle approximation */
+    background:linear-gradient(160deg,#8E72FF 0%, #7C5CFF 50%, #5E3FE0 100%);
+    position:relative;
+    box-shadow:
+      0 60px 120px rgba(94,63,224,0.45),
+      0 30px 60px rgba(0,0,0,0.35),
+      inset 0 6px 0 rgba(255,255,255,0.32),
+      inset 0 -8px 0 rgba(0,0,0,0.18),
+      inset 0 0 0 2px rgba(0,0,0,0.40);
+    overflow:hidden;
+  }
+  .icon::before{
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(120% 80% at 30% 0%, rgba(255,255,255,0.18), transparent 60%),
+      radial-gradient(120% 100% at 70% 110%, rgba(0,0,0,0.22), transparent 55%);
+    pointer-events:none;
+  }
+  .bolt{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    filter:drop-shadow(0 6px 0 rgba(0,0,0,0.18)) drop-shadow(0 12px 24px rgba(0,0,0,0.25));
+  }
+  .bolt svg{width:560px;height:560px}
+</style>
+</head>
+<body>
+  <div class="icon">
+    <div class="bolt">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Lightning bolt: angular, geometric, leaning right; matches DESIGN.md mark spec -->
+        <path d="M58 6 L24 56 L46 56 L40 94 L78 40 L54 40 L62 6 Z"
+              fill="#ffffff"
+              stroke="rgba(255,255,255,0.9)" stroke-width="0.5" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>
