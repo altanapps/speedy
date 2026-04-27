@@ -2,101 +2,134 @@
 
 Native macOS app, Swift + SwiftUI, targeting macOS 13+.
 
-The shippable artifact is a real `.app` bundle generated from `project.yml` via [XcodeGen](https://github.com/yonaskolb/XcodeGen). A parallel `Package.swift` is kept so `swift build` works as a fast compile-time smoke test in CI and during quick iteration on pure-Swift logic.
+The shippable artifact is a real `.app` bundle generated from `project.yml`
+via [XcodeGen](https://github.com/yonaskolb/XcodeGen). A parallel
+`Package.swift` is kept so `swift build` works as a fast compile-time smoke
+test in CI and during quick iteration on pure-Swift logic.
 
-## Run (dev)
-
-Two paths:
-
-**Fast smoke test (no `.app`, no entitlements):**
-
-```bash
-cd macos
-swift build
-swift run
-```
-
-**Real app bundle (menu-bar item, login-item registration, entitlements):**
+## Build
 
 ```bash
 cd macos
 brew install xcodegen     # one-time
 xcodegen generate
-open Speedy.xcodeproj     # then ⌘R, or:
-xcodebuild -project Speedy.xcodeproj -scheme Speedy -configuration Debug build
-open build/Build/Products/Debug/Speedy.app   # if -derivedDataPath was set to build/
+open Speedy.xcodeproj
 ```
 
-`Speedy.xcodeproj/` is generated and gitignored — regenerate with `xcodegen generate` whenever `project.yml` or the source layout changes.
+In Xcode:
+
+1. Select the **Speedy** target → **Signing & Capabilities** → tick
+   **Automatically manage signing** → pick your **Personal Team** (free,
+   just your Apple ID — no Developer Program needed). Required so
+   Accessibility trust persists across rebuilds.
+2. ⌘R to run.
+
+`Speedy.xcodeproj/` is generated and gitignored — regenerate with
+`xcodegen generate` whenever `project.yml` or the source layout changes.
+
+A faster smoke-only path (no `.app` bundle, no entitlements, no
+Accessibility) for iterating on pure-Swift logic:
+
+```bash
+swift build
+swift run
+```
 
 ## Layout
 
-- `project.yml` — XcodeGen spec. Source of truth for bundle id, entitlements, deployment target, signing.
-- `Resources/Info.plist` — bundle metadata. `LSUIElement` is `false` (Speedy has both a Dock icon and a menu-bar item).
-- `Resources/Speedy.entitlements` — non-sandboxed (Accessibility API needs full process trust); `com.apple.security.network.client` for backend calls. Hardened runtime is on.
-- `Sources/Speedy/SpeedyApp.swift` — `@main` entry point. Hosts the SwiftUI window scene and installs `AppDelegate`.
-- `Sources/Speedy/AppDelegate.swift` — owns the `MenuBarController` and `HotkeyMonitor`; suppresses quit-on-last-window-close so the app stays alive in the menu bar; polls Accessibility-trust until the user grants it, then starts hotkey monitoring.
-- `Sources/Speedy/MenuBarController.swift` — `NSStatusItem` with Open / Launch-at-Login / Quit. Menu rebuilds on open so the login-item state stays in sync with system reality. Exposes `flash()` so the hotkey has visible feedback before the overlay lands.
-- `Sources/Speedy/LoginItemController.swift` — wraps `SMAppService.mainApp` (modern macOS 13+ login-item API; replaces the old `~/Library/LaunchAgents` plist approach).
-- `Sources/Speedy/HotkeyMonitor.swift` — `NSEvent` global+local monitor on `.flagsChanged`. Detects double-tap of Control (300ms window) and fires a callback. No `RegisterEventHotKey` because Carbon hotkeys don't trigger on bare modifiers.
-- `Sources/Speedy/AccessibilityPermission.swift` — `AXIsProcessTrusted` check + system prompt + a deep-link to System Settings → Privacy & Security → Accessibility for the "permission missing" flow.
+- `project.yml` — XcodeGen spec. Source of truth for bundle id,
+  entitlements, deployment target, signing.
+- `Resources/Info.plist` — bundle metadata. `LSUIElement` is `false`
+  (Speedy has both a Dock icon and a menu-bar item).
+- `Resources/Speedy.entitlements` — non-sandboxed (Accessibility API
+  needs full process trust); `com.apple.security.network.client` for
+  backend calls. Hardened runtime is on.
+- `Resources/Fonts/` — bundled Inter + JetBrains Mono TTFs for the
+  overlay's typography. Loaded via `ATSApplicationFontsPath` in
+  `Info.plist`.
+- `Sources/Speedy/SpeedyApp.swift` — `@main` entry point. Hosts the
+  SwiftUI window scene and installs `AppDelegate`.
+- `Sources/Speedy/AppDelegate.swift` — owns the `MenuBarController`,
+  `HotkeyMonitor`, and `OverlayController`. Suppresses
+  quit-on-last-window-close so the app stays alive in the menu bar;
+  polls Accessibility-trust until the user grants it; fetches
+  `/config` from the backend at launch for the user's Polymarket
+  profile URL.
+- `Sources/Speedy/MenuBarController.swift` — `NSStatusItem` with Open /
+  Launch-at-Login / Quit (and a "Preview overlay" debug submenu). Menu
+  rebuilds on open so login-item state stays in sync with system reality.
+- `Sources/Speedy/LoginItemController.swift` — wraps `SMAppService.mainApp`
+  (modern macOS 13+ login-item API; replaces the old
+  `~/Library/LaunchAgents` plist approach).
+- `Sources/Speedy/HotkeyMonitor.swift` — `NSEvent` global+local monitor
+  on `.flagsChanged`. Detects double-tap of Control (300ms window) and
+  fires a callback. No `RegisterEventHotKey` because Carbon hotkeys
+  don't trigger on bare modifiers.
+- `Sources/Speedy/AccessibilityPermission.swift` — `AXIsProcessTrusted`
+  check + system prompt + a deep-link to System Settings → Privacy &
+  Security → Accessibility for the "permission missing" flow.
 - `Sources/Speedy/Capture/` — selection-capture pipeline:
   - `Selection.swift` — `{highlight, surroundingContext?, pageTitle?, source}`
-  - `SelectionCapture.swift` — orchestrator, `@MainActor`, AX first then pasteboard.
-  - `AXSelectionReader.swift` — `kAXSelectedTextAttribute` on the system-wide focused element, plus best-effort surrounding context via `kAXStringForRangeParameterizedAttribute`.
-  - `PasteboardSelectionReader.swift` — fallback for Electron (Slack, Notion, Discord, VS Code) where AX doesn't expose the selection. Snapshots the pasteboard, synthesises ⌘C, polls `changeCount` (≤100ms), reads, restores.
-  - `WindowInfo.swift` — frontmost app name + AX focused-window title for `pageTitle`.
+  - `SelectionCapture.swift` — orchestrator, `@MainActor`, AX first
+    then pasteboard.
+  - `AXSelectionReader.swift` — `kAXSelectedTextAttribute` on the
+    system-wide focused element, plus best-effort surrounding context
+    via `kAXStringForRangeParameterizedAttribute`.
+  - `PasteboardSelectionReader.swift` — fallback for Electron (Slack,
+    Notion, Discord, VS Code) where AX doesn't expose the selection.
+    Snapshots the pasteboard, synthesises ⌘C, polls `changeCount`
+    (≤100ms), reads, restores.
+  - `WindowInfo.swift` — frontmost app name + AX focused-window title
+    for `pageTitle`.
 - `Sources/Speedy/Overlay/` — cursor-anchored floating panel:
-  - `OverlayPanel.swift` — borderless, non-activating `NSPanel`; floats across Spaces and into full-screen apps; transparent background so the SwiftUI content owns its own chrome.
-  - `OverlayView.swift` — content driven by an `OverlayStatus` state machine: searching / matched / no-match / error. Real design-system styling lands in PR 9.
-  - `OverlayController.swift` — owns one reused panel and the in-flight `SearchClient` task; presents at cursor; installs Esc + click-outside dismiss monitors; 8s idle auto-dismiss timer; cancels any in-flight search when a fresh hotkey fires.
-  - `OverlayPositioner.swift` — pure cursor → panel-origin math with screen-edge collision avoidance. Tested in `Tests/SpeedyTests/`.
-- `Sources/Speedy/Search/` — backend wire-up:
-  - `SearchResult.swift` — `MatchedMarket` + `SearchResponse` Codable models mirroring the backend's Pydantic; `SearchOutcome` collapses into `matched` / `noMatch`.
-  - `SearchClient.swift` — `SearchClient` protocol + `HTTPSearchClient` (URLSession-backed). Backend URL: `SPEEDY_BACKEND_URL` env var → `SpeedyBackendURL` Info.plist → `http://localhost:8000`.
+  - `OverlayPanel.swift` — borderless, non-activating `NSPanel`;
+    floats across Spaces and into full-screen apps; transparent
+    background so the SwiftUI content owns its own chrome.
+  - `OverlayView.swift` — `OverlayStatus` state machine (searching /
+    matched / noMatch / error / placing / placed / orderError),
+    rendered with the Speedy design system (Inter, JetBrains Mono,
+    dark-glass material).
+  - `OverlayController.swift` — owns one reused panel; presents at
+    cursor with top-left pinning so the panel doesn't move while the
+    user edits; auto-dismisses noMatch (2s) and placed (3s); Esc-only
+    explicit dismiss.
+  - `OverlayPositioner.swift` — pure cursor → panel-origin math with
+    screen-edge collision avoidance. Tested in `Tests/SpeedyTests/`.
+  - `SpeedyTokens.swift` — design-system tokens (colors, typography,
+    radii, spacing, motion).
+  - `TradeControls.swift` — Yes/No segmented control + USDC size
+    field + Buy button. Mounted into the matched-state body.
+- `Sources/Speedy/Search/` — backend wire-up for retrieval:
+  - `SearchResult.swift` — `MatchedMarket` + `SearchResponse` Codable
+    models mirroring the backend's Pydantic; `SearchOutcome` collapses
+    into `matched` / `noMatch`.
+  - `SearchClient.swift` — `SearchClient` protocol + `HTTPSearchClient`
+    (URLSession-backed). Backend URL: `SPEEDY_BACKEND_URL` env →
+    `SpeedyBackendURL` Info.plist key → `http://localhost:8000`.
+  - `ConfigClient.swift` — one-shot GET `/config` at launch, returns
+    the user's Polymarket profile URL so the overlay's "View on
+    Polymarket" link points to the right wallet.
+- `Sources/Speedy/Trading/` — order-submission wire-up:
+  - `Order.swift` — `OrderRequest` + `OrderResponse` Codable mirrors.
+  - `OrderClient.swift` — POST `/order` to the backend.
+- `Tests/SpeedyTests/` — XCTest target. Positioner math, search/order
+  client request shapes via `URLProtocol` stubbing.
 
 ## Trying it end-to-end
 
-You need the backend running so the overlay has something to hit. From the repo root:
+You need the backend running first — see [`../backend/README.md`](../backend/README.md).
 
-```bash
-# 1. Postgres + pgvector
-cd backend
-docker compose up -d
-python3.14 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-export DATABASE_URL=postgresql+asyncpg://speedy:speedy@localhost:5432/speedy
-export OPENAI_API_KEY=sk-...
-alembic upgrade head
+Once `make serve` is up at `localhost:8000`:
 
-# 2. Populate the index (takes a few minutes — OpenAI embeddings are the bottleneck)
-speedy-refresh
+1. ⌘R the macOS app from Xcode.
+2. macOS prompts for Accessibility on first launch — grant it.
+3. Select text in any app, double-tap **Control**.
+4. Bolt icon flashes; floating panel appears at cursor with the matched
+   market and live Yes/No prices.
+5. Click Yes/No, set size, **⌘↵** to submit. **Esc** dismisses.
 
-# 3. Serve the API
-uvicorn app.main:app --reload
-```
-
-Then in another shell:
-
-```bash
-cd macos
-xcodegen generate
-open Speedy.xcodeproj            # ⌘R in Xcode
-```
-
-The macOS app will hit `http://localhost:8000/search` by default. To point at a different backend (e.g. a Railway deploy), set `SPEEDY_BACKEND_URL` in the Xcode scheme's environment variables.
-
-On first launch macOS will prompt for Accessibility — grant it via System Settings → Privacy & Security → Accessibility. Once granted:
-
-1. Select some text in any app (Safari, Notes, Slack, a PDF).
-2. Double-tap **Control** anywhere on the system.
-3. The menu-bar bolt icon flashes for ~250ms, **and** a small floating panel appears next to the cursor showing the captured text + a "Searching markets…" row that resolves to either a market card (with score) or "No tradeable market" once `/search` returns.
-4. The panel dismisses on **Esc**, on **click-outside**, or after **8 seconds** of idle.
-
-In the Xcode console (⌘⇧Y) you'll also see:
-```
-Speedy: captured via accessibility — Powell signaled patience on rate cuts
-```
+To point the app at a different backend (e.g. a Railway deploy), set
+`SPEEDY_BACKEND_URL` in the Xcode scheme's environment variables.
 
 ## Running tests
 
@@ -106,15 +139,19 @@ cd macos
 swift test
 ```
 
-CI runs `swift test` on `macos-15` so the test target is exercised on every push.
+CI runs `swift test` on `macos-15` so the test target is exercised on
+every push.
 
-If you tried it from an Electron app (Slack, Notion, Discord, VS Code), expect `via pasteboard` instead — the same text, just routed through a synthetic ⌘C with the clipboard restored within ~100ms.
-
-If the Accessibility prompt was dismissed without granting, toggle the Speedy entry off and on in System Settings; the app polls trust state once a second and starts the monitor as soon as it flips.
+## Troubleshooting
 
 ### "AX is on, but the hotkey doesn't fire"
 
-macOS pins Accessibility trust to a binary's **code signature**, not its bundle id. Every ad-hoc dev build (`CODE_SIGN_IDENTITY="-"`) produces a new signature, so the "Speedy" entry you see toggled on is for a *previous* build. The current binary has no matching trust entry and `AXIsProcessTrusted()` returns `false` even though the entry looks correct.
+macOS pins Accessibility trust to a binary's **code signature**, not its
+bundle id. Every ad-hoc dev build (`CODE_SIGN_IDENTITY="-"`) produces a
+new signature, so the "Speedy" entry you see toggled on may be for a
+*previous* build. The current binary then has no matching trust entry
+and `AXIsProcessTrusted()` returns `false` even though the entry looks
+correct.
 
 Reset it cleanly:
 
@@ -122,22 +159,22 @@ Reset it cleanly:
 tccutil reset Accessibility tech.nuff.speedy
 ```
 
-Then **⌘.** + **⌘R** in Xcode. A fresh prompt appears — grant it. The new signature gets a fresh trust entry and the polling timer flips within ~1s.
+Then **⌘.** + **⌘R** in Xcode. A fresh prompt appears — grant it. The
+new signature gets a fresh trust entry and the polling timer flips
+within ~1s.
 
-You'll need this every time the binary signature changes meaningfully (e.g. after long pauses between builds, switching machines, or signing-config changes). Once we have a real Developer ID signature in PR 15, this stops being an issue.
+You'll hit this every time the binary signature changes meaningfully
+(switching machines, signing-config changes, long pauses between
+builds). The Personal Team signing setup above (Signing & Capabilities
+→ Automatic) reduces but doesn't eliminate signature drift.
 
-## What's in this PR vs. later
+### Pasteboard fallback
 
-Capture only. Nothing is sent to the backend yet — the captured text is logged so you can verify the pipeline. Wiring the result into a `/search` request lands in PR 13; the cursor-anchored overlay in PR 8.
-
-## Status
-
-Subsequent PRs add:
-- Cursor-anchored `NSPanel` overlay (PR 8)
-- Full design-system port — Inter, JetBrains Mono, materials (PR 9)
-- Privy onboarding via `WKWebView` (PR 10)
-- Polymarket proxy wallet + session-key auth (PR 11)
-- Order placement (PR 12)
-- Backend wire-up (PR 13)
-- Positions popover (PR 14)
-- TestFlight build, signing, notarization, app icon (PR 15)
+If you trigger Speedy from an Electron app (Slack, Notion, Discord,
+VS Code), the AX path returns nothing useful — those apps don't
+expose `kAXSelectedTextAttribute`. Speedy falls back to synthesising
+⌘C, reading the pasteboard, and restoring it. You'll see
+`captured via pasteboard` in the console instead of
+`via accessibility`. Same end behavior, but there's a short window
+(~30ms typical, 100ms cap) where your real clipboard is briefly
+unavailable.

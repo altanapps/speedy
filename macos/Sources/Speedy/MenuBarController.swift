@@ -27,8 +27,11 @@ final class MenuBarController: NSObject {
         rebuild()
     }
 
-    /// Visual feedback when the hotkey fires. Until the overlay lands (PR 8),
-    /// this is the only signal the user gets that selection-capture happened.
+    /// Visual feedback when the hotkey fires — the bolt icon flips
+    /// outline → filled briefly. Useful as a confirmation signal even
+    /// when the overlay is also rendering, and the only signal in cases
+    /// where the overlay decides not to render (e.g. capture returned
+    /// nothing).
     func flash() {
         guard let button = statusItem.button else { return }
         flashWorkItem?.cancel()

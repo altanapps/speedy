@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Owns the floating overlay panel: lifecycle, placement, dismissal, the
-/// in-flight search, and (PR 10–12) order submission.
+/// in-flight search, and order submission.
 ///
 /// One panel is reused across hotkey fires. A fresh fire cancels any
 /// previous search-in-flight before kicking off a new one — otherwise a slow

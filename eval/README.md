@@ -1,10 +1,22 @@
 # Eval — selection→market labeled set
 
-Holds the labeled evaluation corpus used to measure retrieval quality.
+The labeled corpus used to measure retrieval quality. Each row pairs a
+realistic highlight (with surrounding context) against the Polymarket
+market a human reviewer would expect Speedy to return.
 
-Each row pairs a realistic highlight (with surrounding context) against the Polymarket market a human reviewer would expect Speedy to return. Top-1 accuracy on this set is the only honest measure of whether the retriever works.
+Top-1 accuracy on this set is the only honest measure of whether the
+retriever works.
 
-## Layout (TBD, set in PR 4 / PR 5)
+## Status
+
+Empty placeholder. The harness + seed fixtures are tracked in
+[issue #10](https://github.com/altanapps/speedy/issues/10).
+
+If you've used Speedy and noticed cases where the search picked a
+clearly-wrong market, those failures are exactly what this corpus
+should capture. Open an issue or drop them in the thread.
+
+## Intended layout
 
 ```
 eval/
@@ -13,8 +25,14 @@ eval/
   reports/         # generated accuracy reports per commit
 ```
 
-## Why this exists before any feature code
+## Why this exists
 
-If we cannot measure retrieval quality on representative inputs, we cannot tell whether tuning the embedding model, prompt, or threshold actually helps. The eval set is the source of truth — every retrieval change ships with a delta against it.
+Without measurement on representative inputs, every retrieval change is
+opinion. Threshold tuning, prompt edits, model swaps — none of them are
+"better" until they move a number on this set.
 
-Status: empty placeholder. PR 4 wires the schema and seeds the first ~50 fixtures.
+Aim: ~30–50 hand-labeled examples covering short ambiguous queries
+(*"Powell"*), long sentences with contextual signals, and categories
+across the active market set (macro, politics, crypto, sports). The
+hardest-to-label cases — phrasings that don't lexically match the
+market question — are the ones that matter most.

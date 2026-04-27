@@ -35,8 +35,9 @@ struct OverlayView: View {
     let status: OverlayStatus
     /// Optional trade-control bindings. When non-nil and `status` is
     /// `.matched`, the overlay renders `TradeControls` below the market card.
-    /// Keeping this as a single optional config avoids forking OverlayView's
-    /// init in a way that would conflict with the design-system port (PR 9).
+    /// Wrapped in a single optional config so OverlayView's init stays
+    /// short and the trade controls can be enabled or omitted from one
+    /// place upstream (e.g. read-only previews).
     var tradeControls: TradeControlsConfig? = nil
     /// Polymarket profile URL for the configured funder address. When set,
     /// the placed-state link goes here instead of the generic /portfolio.
@@ -113,9 +114,10 @@ struct OverlayView: View {
                     .foregroundStyle(Speedy.ColorToken.labelTertiary)
             }
             Spacer(minLength: 0)
-            // Right-side hint: just `esc` for now. The trade-flow agent
-            // will add `⌘⏎ confirm · esc` once there's a confirm action.
-            Text("esc")
+            // Right-side hint. ⌘↵ is the keyboard shortcut to submit
+            // the trade when the matched-state Buy button is visible;
+            // esc dismisses regardless of state.
+            Text("⌘↵ trade · esc")
                 .font(Speedy.Font.mono(10))
                 .foregroundStyle(Speedy.ColorToken.labelQuaternary)
         }

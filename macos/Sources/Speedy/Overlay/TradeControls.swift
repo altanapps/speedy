@@ -1,14 +1,13 @@
 import SwiftUI
 
 /// Tiny trading affordance below the matched market card. Deliberately
-/// minimal: Yes/No segmented control, USDC size field, Buy button. The
-/// design-system port (PR 9) will restyle the whole card later — this view
-/// is the merge-friendly insertion point.
+/// minimal: Yes/No segmented control, USDC size field, Buy button.
 ///
 /// Submission paths:
-/// 1. The user clicks "Buy".
-/// 2. `OverlayController` translates ⌘↵ into a call to `submit()` via the
-///    `submitTrigger` token. We can't observe global hotkeys from here.
+/// 1. The user clicks "Buy" inside this view.
+/// 2. The user presses ⌘↵; `OverlayController`'s global key monitor sees
+///    it and calls `submitOrder()` directly. We can't observe global
+///    hotkeys from here, so the controller mediates.
 struct TradeControls: View {
     @Binding var outcome: OrderRequest.Outcome
     @Binding var sizeText: String

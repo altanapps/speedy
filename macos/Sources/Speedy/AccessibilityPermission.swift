@@ -4,8 +4,8 @@ import ApplicationServices
 /// Wrapper around the macOS Accessibility-trust APIs.
 ///
 /// Speedy needs Accessibility for two things: monitoring global key events
-/// (the double-tap-Control hotkey) and reading selected text via the AX tree
-/// in PR 7. Both are gated by the same per-app system permission.
+/// (the double-tap-Control hotkey) and reading selected text via the AX
+/// tree. Both are gated by the same per-app system permission.
 enum AccessibilityPermission {
     /// True if the user has already granted Accessibility access to this app.
     /// Cheap to call; safe to poll from a periodic timer.
