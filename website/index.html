@@ -4,6 +4,25 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Speedy — bet the news where you read it</title>
+
+<!-- Favicons + iOS home-screen icon. Smaller derivatives generated from
+     claude-design/marketing/icon.png so we don't ship 1.3MB on every load. -->
+<link rel="icon" type="image/png" sizes="256x256" href="/favicon-256.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"/>
+
+<!-- Open Graph / Twitter card. Image URLs must be absolute (Twitter and
+     Slack/Discord previewers fetch them server-side). -->
+<meta name="description" content="Trade where you read. Highlight any text on your Mac, hit ⌃⌃, and Speedy surfaces the matching Polymarket market at your cursor."/>
+<meta property="og:title" content="Speedy — Trade where you read"/>
+<meta property="og:description" content="Highlight any text on your Mac, hit ⌃⌃, and Speedy surfaces the matching Polymarket market at your cursor."/>
+<meta property="og:image" content="https://getspeedy.app/og-card.png"/>
+<meta property="og:url" content="https://getspeedy.app"/>
+<meta property="og:type" content="website"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Speedy — Trade where you read"/>
+<meta name="twitter:description" content="Highlight any text on your Mac, hit ⌃⌃, and Speedy surfaces the matching Polymarket market at your cursor."/>
+<meta name="twitter:image" content="https://getspeedy.app/og-card.png"/>
+
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -137,12 +156,14 @@
   }
   .brand{display:flex;align-items:center;gap:9px}
   .mark{
+    /* Gradient + bolt are baked into mark-64.png; we just clip to the squircle
+       shape and add the outer purple glow. */
     width:24px;height:24px;border-radius:7px;
-    background:var(--accent);
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 8px rgba(124,92,255,0.30);
+    overflow:hidden;
+    box-shadow:0 2px 8px rgba(124,92,255,0.30);
     transform:rotate(-2deg);
   }
+  .mark img{width:100%;height:100%;display:block}
   .brand-name{
     font-family:var(--serif);
     font-weight:600;font-size:18px;letter-spacing:-0.02em;
@@ -727,9 +748,7 @@
 <div class="topbar">
   <div class="brand">
     <div class="mark">
-      <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
-        <path d="M6.5 0L0 7.5h4L3 13l7.5-7.5h-4L7.5 0z" fill="#fafaf7"/>
-      </svg>
+      <img src="/mark-64.png" alt="" width="24" height="24"/>
     </div>
     <span class="brand-name">Speedy</span>
     <span class="brand-beta">PRIVATE BETA</span>
