@@ -46,7 +46,7 @@ End-to-end loop:
 - **Anthropic** is optional but strongly recommended. When set, `/search` reranks the top-10 pgvector candidates with `claude-haiku-4-5`. Big win on ambiguous queries (*"Powell"* — which Powell?). Without it, falls back to embedding-only top-1 with a cosine similarity threshold.
 - **Polymarket** isn't an "API key." You export the **private key** of your MetaMask wallet from polymarket.com (Wallet menu → Export private key). You also need your **funder address** — the deposit address polymarket.com shows you, which is your proxy wallet, not your EOA.
 
-All secrets live in a single gitignored `backend/.env` file. Speedy never sends keys anywhere except the corresponding service.
+All secrets live in your **macOS Keychain** under the service name `speedy`. Setup is interactive (`make set-keys` prompts and stores them; values never touch disk in plaintext). `backend/.env` still works as an override for CI / Docker / temporary use — env wins over Keychain when both are set. Speedy never sends keys anywhere except the corresponding service.
 
 ## Install
 
@@ -56,29 +56,15 @@ All secrets live in a single gitignored `backend/.env` file. Speedy never sends 
 git clone https://github.com/altanapps/speedy.git
 cd speedy/backend
 
-make setup
-# Installs postgres@17 + pgvector via brew, creates the speedy db,
-# runs migrations, creates an .env from .env.example.
-```
-
-Edit `backend/.env`:
-
-```
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...                    # optional but recommended
-POLYMARKET_PRIVATE_KEY=0x...                    # export from polymarket.com
-POLYMARKET_FUNDER_ADDRESS=0x...                 # your polymarket.com deposit address
-POLYMARKET_SIGNATURE_TYPE=2                     # 2 for newer Safe wallets (most accounts);
-                                                # 1 for older proxies; 0 for raw EOA
-SPEEDY_SEARCH_THRESHOLD=0.4                     # optional: lower = more matches, more noise
-```
-
-Then:
-
-```bash
+make setup                       # brew installs postgres@17 + pgvector, creates the db, runs migrations
+make set-keys                    # interactive: prompts for OpenAI / Anthropic / Polymarket keys, stores in macOS Keychain
 make refresh                     # ~5–15 min, ~$0.10 in OpenAI charges
 make serve                       # uvicorn on :8000 — leave running
 ```
+
+`make set-keys` walks through each key one at a time; press enter to skip optional ones. Inspect with `make show-keys` (never prints values), wipe with `make clear-keys`.
+
+Two non-secret config knobs live in `backend/.env` if you want to override them — `POLYMARKET_SIGNATURE_TYPE` (defaults to `1`; set `2` for newer Safe wallets, `0` for raw EOA) and `SPEEDY_SEARCH_THRESHOLD` (defaults to `0.55`; lower = more matches with more noise).
 
 If anything goes sideways: `make doctor` prints a one-screen diagnostic.
 
@@ -142,9 +128,9 @@ open Speedy.xcodeproj
 
 ### Order fails with "POLYMARKET_FUNDER_ADDRESS is required"
 
-Your `signature_type` is 1 or 2 but the funder address is missing. Find your deposit address on polymarket.com → Wallet → Deposit. That's the proxy address; put it in `.env` as `POLYMARKET_FUNDER_ADDRESS`.
+Your `signature_type` is 1 or 2 but the funder address is missing. Find your deposit address on polymarket.com → Wallet → Deposit. That's the proxy address; run `make set-keys` and paste it when prompted for `POLYMARKET_FUNDER_ADDRESS`.
 
-If your wallet is a raw self-custody EOA (USDC sits at your MetaMask address directly, not at a proxy), set `POLYMARKET_SIGNATURE_TYPE=0` and skip the funder address.
+If your wallet is a raw self-custody EOA (USDC sits at your MetaMask address directly, not at a proxy), set `POLYMARKET_SIGNATURE_TYPE=0` in `backend/.env` and skip the funder address.
 
 ### Order fails with "ModuleNotFoundError: py_clob_client"
 

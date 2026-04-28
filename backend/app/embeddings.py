@@ -7,7 +7,6 @@ responsible for batching at the *market* level; we batch at the *API* level
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
@@ -44,7 +43,9 @@ class OpenAIEmbedder:
     def _ensure_client(self) -> AsyncOpenAI:
         if self._client is not None:
             return self._client
-        api_key = os.environ.get("OPENAI_API_KEY")
+        from app.secrets import get_secret
+
+        api_key = get_secret("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY is not set")
         from openai import AsyncOpenAI

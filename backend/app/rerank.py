@@ -17,7 +17,6 @@ Output: structured (Pydantic) so we can't parse it wrong; `pick` is either
 from __future__ import annotations
 
 import logging
-import os
 from typing import TYPE_CHECKING, Protocol
 
 from pydantic import BaseModel, Field
@@ -203,7 +202,9 @@ class HaikuReranker(Reranker):
     def _ensure_client(self) -> AsyncAnthropic:
         if self._client is not None:
             return self._client
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        from app.secrets import get_secret
+
+        api_key = get_secret("ANTHROPIC_API_KEY")
         if not api_key:
             raise RuntimeError("ANTHROPIC_API_KEY is not set")
         from anthropic import AsyncAnthropic

@@ -104,7 +104,10 @@ from app import trading  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def _reset(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Each test starts with a clean creds cache + clean env for trading vars."""
+    """Each test starts with a clean creds cache + clean env for trading vars.
+
+    Also stubs out the Keychain lookup so tests are deterministic regardless
+    of whether the host machine has real Speedy Keychain entries set."""
     trading._reset_credentials_cache_for_tests()
     for var in (
         "POLYMARKET_PRIVATE_KEY",
@@ -113,6 +116,8 @@ def _reset(monkeypatch: pytest.MonkeyPatch) -> None:
         "POLYMARKET_CLOB_HOST",
     ):
         monkeypatch.delenv(var, raising=False)
+    from app import secrets as _secrets
+    monkeypatch.setattr(_secrets, "_keyring_get", lambda _name: None)
     _FakeClobClient.last_instance = None
 
 

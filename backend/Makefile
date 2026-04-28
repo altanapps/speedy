@@ -1,4 +1,4 @@
-.PHONY: help setup db venv install migrate refresh serve doctor
+.PHONY: help setup db venv install migrate refresh serve doctor set-keys show-keys clear-keys
 
 # Source .env if it exists so OPENAI_API_KEY (and any overrides) carry across
 # shells without the user re-exporting them.
@@ -24,14 +24,12 @@ help:  ## Print this help
 setup: db venv install migrate env  ## One-shot first-time setup (everything below)
 	@echo
 	@echo "✓ Setup complete. Next:"
-	@if [ -z "$$OPENAI_API_KEY" ]; then \
-	  echo "    edit backend/.env and put your OPENAI_API_KEY=sk-..."; \
-	fi
+	@echo "    make set-keys       # store API + Polymarket keys in macOS Keychain"
 	@echo "    make refresh        # populate the index (~5–15 min)"
 	@echo "    make serve          # start the API on :8000"
 
-env:  ## Create a .env from .env.example if absent
-	@if [ ! -f .env ]; then cp .env.example .env && echo "✓ created .env (fill in OPENAI_API_KEY)"; else echo "✓ .env present"; fi
+env:  ## Create a .env from .env.example if absent (optional — Keychain is preferred)
+	@if [ ! -f .env ]; then cp .env.example .env && echo "✓ created .env (Keychain via 'make set-keys' is preferred for secrets)"; else echo "✓ .env present"; fi
 
 db:  ## Install postgres + pgvector via brew, create the speedy database
 	@command -v brew >/dev/null 2>&1 || { echo "Homebrew is required: https://brew.sh"; exit 1; }
@@ -60,12 +58,20 @@ migrate:  ## Apply alembic migrations
 	@. $(VENV)/bin/activate && DATABASE_URL=$(DATABASE_URL) alembic upgrade head
 	@echo "✓ schema up to date"
 
-refresh:  ## Pull active Polymarket markets + embed (needs OPENAI_API_KEY)
-	@if [ -z "$$OPENAI_API_KEY" ]; then echo "OPENAI_API_KEY is not set. Add it to backend/.env or export it."; exit 1; fi
+refresh:  ## Pull active Polymarket markets + embed (needs OPENAI_API_KEY in Keychain or env)
 	@. $(VENV)/bin/activate && DATABASE_URL=$(DATABASE_URL) speedy-refresh
 
 serve:  ## Run uvicorn on :8000
 	@. $(VENV)/bin/activate && DATABASE_URL=$(DATABASE_URL) uvicorn app.main:app --reload --port 8000
+
+set-keys:  ## Store OpenAI / Anthropic / Polymarket keys in macOS Keychain
+	@. $(VENV)/bin/activate && speedy-keys set
+
+show-keys:  ## Show which Speedy keys are present in Keychain (no values)
+	@. $(VENV)/bin/activate && speedy-keys show
+
+clear-keys:  ## Delete all Speedy entries from Keychain
+	@. $(VENV)/bin/activate && speedy-keys clear
 
 doctor:  ## Print diagnostic info — useful when something's not working
 	@echo "macOS:           $$(sw_vers -productVersion)"
@@ -79,4 +85,10 @@ doctor:  ## Print diagnostic info — useful when something's not working
 	  if [ -x "$$PG_BIN/psql" ]; then \
 	    echo "speedy db:       $$("$$PG_BIN/psql" -U $$USER -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$(DB_NAME)'" 2>/dev/null | grep -q 1 && echo present || echo MISSING)"; \
 	  fi
-	@echo "OPENAI_API_KEY:  $$([ -n "$$OPENAI_API_KEY" ] && echo set || echo NOT SET)"
+	@echo "secrets:"
+	@if [ -n "$$OPENAI_API_KEY" ]; then echo "  OPENAI_API_KEY  set (env)"; fi
+	@if [ -d $(VENV) ]; then \
+	  . $(VENV)/bin/activate && speedy-keys show 2>/dev/null | sed 's/^/  /' || true; \
+	else \
+	  echo "  (run 'make install' to enable Keychain check)"; \
+	fi
