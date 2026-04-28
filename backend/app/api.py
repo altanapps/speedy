@@ -7,7 +7,6 @@ touching the route function.
 """
 from __future__ import annotations
 
-import os
 from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Annotated, Literal
@@ -47,7 +46,9 @@ class ConfigResponse(BaseModel):
 
 @router.get("/config", response_model=ConfigResponse)
 async def config_endpoint() -> ConfigResponse:
-    funder = (os.environ.get("POLYMARKET_FUNDER_ADDRESS") or "").strip() or None
+    from app.secrets import get_secret
+
+    funder = get_secret("POLYMARKET_FUNDER_ADDRESS")
     profile_url = f"https://polymarket.com/profile/{funder}" if funder else None
     return ConfigResponse(funder_address=funder, polymarket_profile_url=profile_url)
 
@@ -98,7 +99,9 @@ def get_reranker() -> Reranker | None:
     global _default_reranker
     if _default_reranker is not None:
         return _default_reranker
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    from app.secrets import get_secret
+
+    if not get_secret("ANTHROPIC_API_KEY"):
         return None
     _default_reranker = HaikuReranker()
     return _default_reranker

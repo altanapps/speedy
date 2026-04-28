@@ -8,13 +8,13 @@ The Makefile drives a brew-native postgres + pgvector setup — no Docker requir
 
 ```bash
 cd backend
-make setup                       # brew installs postgres@17 + pgvector, creates the speedy db, runs migrations, creates .env
-# edit .env and set OPENAI_API_KEY=sk-...
+make setup                       # brew installs postgres@17 + pgvector, creates the speedy db, runs migrations
+make set-keys                    # interactive: stores OpenAI / Anthropic / Polymarket keys in macOS Keychain
 make refresh                     # one cycle: pulls active Polymarket markets + embeds them (~5–15 min the first time)
 make serve                       # uvicorn on :8000 — leave running
 ```
 
-The Makefile auto-sources `backend/.env` (gitignored) for `OPENAI_API_KEY`, optional `DATABASE_URL`, and `SPEEDY_SEARCH_THRESHOLD`. See `.env.example`.
+Secrets live in macOS Keychain under the service name `speedy`. Inspect with `make show-keys` (never prints values), wipe with `make clear-keys`. `.env` still works as an override for CI / Docker / one-off runs — env wins over Keychain when both are set.
 
 `make doctor` prints a one-screen diagnostic if anything goes wrong (postgres not running, venv missing, no API key, etc.).
 
@@ -25,7 +25,7 @@ The Makefile auto-sources `backend/.env` (gitignored) for `OPENAI_API_KEY`, opti
 - **Embedding-only** (default if `ANTHROPIC_API_KEY` is unset): pgvector top-1 with a cosine-similarity threshold gate. Threshold tunable via `SPEEDY_SEARCH_THRESHOLD` (default `0.55`).
 - **Embedding + rerank** (when `ANTHROPIC_API_KEY` is set): pgvector top-10 → `claude-haiku-4-5` disambiguator → top-1. Bypasses the cosine threshold; trusts the reranker's "none of these is good" judgment. Cost: ~$0.001 per search.
 
-Set `ANTHROPIC_API_KEY` in `.env` to enable rerank. PRD §6.3 v0.2 retrieval path; biggest expected gain on ambiguous queries (*"Powell"* → which Powell?).
+Run `make set-keys` and paste an Anthropic key when prompted (or skip to leave embedding-only). PRD §6.3 v0.2 retrieval path; biggest expected gain on ambiguous queries (*"Powell"* → which Powell?).
 
 Health check:
 

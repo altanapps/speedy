@@ -15,6 +15,7 @@ dependencies = [
     "anthropic>=0.40",
     "py-clob-client>=0.21",
     "web3>=6.20",
+    "keyring>=25.0",
 ]
 
 [project.optional-dependencies]
@@ -26,6 +27,7 @@ dev = [
 
 [project.scripts]
 speedy-refresh = "app.refresh:_cli"
+speedy-keys = "app.keys_cli:main"
 
 [tool.ruff]
 line-length = 100

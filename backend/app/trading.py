@@ -84,23 +84,28 @@ def _reset_credentials_cache_for_tests() -> None:
 
 
 def _load_credentials() -> _Credentials:
-    """Read env once. Fail fast and loud if the private key is missing — we
-    never want a 'silent fallback' that pretends to place an order."""
+    """Read credentials once. Env wins over Keychain; Keychain wins over nothing.
+    Fail fast and loud if the private key is missing — we never want a 'silent
+    fallback' that pretends to place an order."""
     global _creds_cache
     if _creds_cache is not None:
         return _creds_cache
 
-    private_key = os.environ.get("POLYMARKET_PRIVATE_KEY", "").strip()
+    from app.secrets import get_secret
+
+    private_key = get_secret("POLYMARKET_PRIVATE_KEY")
     if not private_key:
         raise MissingCredentialsError(
             "POLYMARKET_PRIVATE_KEY is not set. Export your Polymarket signer "
-            "key from polymarket.com (wallet → export private key) and put it "
-            "in backend/.env. Never commit it."
+            "key from polymarket.com (wallet → export private key) and run "
+            "`make set-keys` in the backend dir to store it in macOS Keychain. "
+            "Never commit it."
         )
 
     # Default signature_type=1 (proxy / Magic-style funder) because that's what
     # 99% of polymarket.com accounts are. signature_type=0 is for self-custody
     # EOAs that hold USDC directly. Override with POLYMARKET_SIGNATURE_TYPE.
+    # Not stored in Keychain — it's a config value, not a secret.
     sig_type_raw = os.environ.get("POLYMARKET_SIGNATURE_TYPE", "1").strip()
     try:
         signature_type = int(sig_type_raw)
@@ -113,13 +118,14 @@ def _load_credentials() -> _Credentials:
             f"POLYMARKET_SIGNATURE_TYPE must be 0, 1, or 2; got {signature_type}"
         )
 
-    funder = os.environ.get("POLYMARKET_FUNDER_ADDRESS", "").strip() or None
+    funder = get_secret("POLYMARKET_FUNDER_ADDRESS")
     if signature_type != 0 and not funder:
         raise MissingCredentialsError(
             "POLYMARKET_FUNDER_ADDRESS is required when "
             "POLYMARKET_SIGNATURE_TYPE != 0. The funder is the proxy "
             "contract that actually holds your USDC — you can find it on "
-            "polymarket.com under wallet / deposit address."
+            "polymarket.com under wallet / deposit address. Set it via "
+            "`make set-keys`."
         )
 
     clob_host = (
