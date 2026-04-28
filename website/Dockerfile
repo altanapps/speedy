@@ -12,3 +12,6 @@ FROM caddy:2-alpine
 COPY Caddyfile /etc/caddy/Caddyfile
 COPY . /srv
 RUN rm -f /srv/Dockerfile /srv/Caddyfile /srv/.dockerignore
+
+# Hint to Railway / readers — Caddy listens on 8080 (see Caddyfile).
+EXPOSE 8080
