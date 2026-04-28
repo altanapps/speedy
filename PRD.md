@@ -35,7 +35,7 @@ Every step is friction the trader pays for in either missed entries or in not bo
 - Portfolio analytics beyond a simple cross-venue P&L view.
 - Charting, technical analysis, or research tooling.
 - Mobile apps.
-- Windows support (deferred to v2).
+- Windows.
 
 ## 5. User experience
 
@@ -167,7 +167,6 @@ Ship the smallest end-to-end loop that proves the core hypothesis:
 **Explicitly excluded from MVP:**
 - Equities, perpetuals, futures (v0.2+).
 - Kalshi, Alpaca, Hyperliquid, IBKR (v0.2+).
-- Windows.
 - Disambiguation dropdown (just show top-1 in MVP; if confidence < threshold, show "no match").
 - Cross-venue P&L aggregation.
 - Default-direction inference from context (require explicit Yes/No click in MVP).
@@ -181,12 +180,11 @@ Ship the smallest end-to-end loop that proves the core hypothesis:
 | v0.2 — Breadth | + Kalshi, Alpaca, disambiguation UI | +4 weeks |
 | v0.3 — Depth | + Hyperliquid, IBKR, direction inference, P&L view | +4 weeks |
 | v1.0 — Public launch | Hardened auth, compliance review complete, marketing site | +6 weeks |
-| v2.0 — Windows | UI Automation port | post-launch |
 
 ## 9. Recommended stack
 
 - **App shell:** Swift + SwiftUI for native macOS. Avoid Electron/Tauri — the floating overlay, system hotkey, and Accessibility API integration are fragile through web wrappers.
-- **Core logic:** Swift, with Rust crate for any cross-platform pieces that need to port to Windows later (entity resolution client, market index client).
+- **Core logic:** Swift. No cross-platform abstraction layer — the hotkey, AX, and overlay pieces are Mac-specific by design.
 - **Entity resolution (MVP):** hosted LLM (Claude Haiku or similar) via FastAPI proxy — never call provider directly from client (key safety).
 - **Local NER model (post-MVP):** CoreML-converted fine-tuned model, ~1B params quantized to int4. Llama.cpp + Metal as fallback runtime.
 - **Backend services (market index, NER proxy):** Python (FastAPI) + Postgres + pgvector, hosted on Fly.io or Railway for v0.1.
