@@ -1,5 +1,17 @@
-# Railway sets $PORT; default to 80 for local docker runs.
-:{$PORT:80} {
+{
+	# Railway terminates TLS at the edge; Caddy serves plain HTTP behind it.
+	auto_https off
+	# No need for the admin API — saves a port.
+	admin off
+	# Send access logs to stdout so they show up in Railway's log viewer.
+	log {
+		output stdout
+	}
+}
+
+# Bind to whatever port Railway injected; fail loudly if PORT is unset
+# (better than silently listening on the wrong one).
+:{$PORT} {
 	root * /srv
 	encode gzip
 	file_server
