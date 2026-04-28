@@ -891,11 +891,9 @@
     </form>
     <div class="success" id="wlSuccess">
       <span class="mono" style="color:var(--accent-ink);font-weight:600;margin-right:8px">▸</span>
-      You're #2,418 in line. We'll send your invite when a slot opens.
+      You're #<span id="wlPosition">—</span> in line. We'll send your invite when a slot opens.
     </div>
-    <div class="waitlist-meta">
-      <span class="ink">2,417</span> ahead of you · macOS 14+
-    </div>
+    <div class="waitlist-meta">macOS 14+</div>
   </div>
 </section>
 
@@ -959,10 +957,21 @@
 </footer>
 
 <script>
+  // Backend that owns POST /waitlist. Override window.SPEEDY_API_BASE
+  // before this script runs to point at a preview deploy.
+  const SPEEDY_API_BASE = window.SPEEDY_API_BASE || (
+    location.hostname === 'localhost'
+      ? 'http://localhost:8000'
+      : 'https://api.getspeedy.app'
+  );
+
   const form = document.getElementById('wlForm');
   const email = document.getElementById('wlEmail');
   const success = document.getElementById('wlSuccess');
-  form.addEventListener('submit', (e) => {
+  const position = document.getElementById('wlPosition');
+  const submitBtn = form.querySelector('button[type=submit]');
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!email.value || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value)) {
       email.focus();
@@ -970,8 +979,27 @@
       setTimeout(() => form.style.borderColor = '', 700);
       return;
     }
-    form.style.display = 'none';
-    success.classList.add('on');
+    submitBtn.disabled = true;
+    try {
+      const r = await fetch(`${SPEEDY_API_BASE}/waitlist`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email: email.value.trim().toLowerCase(),
+          referrer: document.referrer || null,
+        }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const body = await r.json();
+      position.textContent = (body.position || 0).toLocaleString();
+      form.style.display = 'none';
+      success.classList.add('on');
+    } catch (err) {
+      console.error('waitlist submit failed', err);
+      form.style.borderColor = '#c43a2a';
+      setTimeout(() => form.style.borderColor = '', 1500);
+      submitBtn.disabled = false;
+    }
   });
 
   // Yes / No demo buttons — toggle a .filled state; CSS drives the swap so

@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import sessionmaker
 from app.embeddings import Embedder, OpenAIEmbedder
-from app.models import Market
+from app.models import Market, WaitlistSignup
 from app.rerank import HaikuReranker, Reranker
 from app.search import search
 from app.trading import (
@@ -50,6 +50,54 @@ async def config_endpoint() -> ConfigResponse:
     funder = (os.environ.get("POLYMARKET_FUNDER_ADDRESS") or "").strip() or None
     profile_url = f"https://polymarket.com/profile/{funder}" if funder else None
     return ConfigResponse(funder_address=funder, polymarket_profile_url=profile_url)
+
+
+# RFC-5322 is hairy; this regex matches the same thing the marketing form's
+# client-side validator does. Defense in depth — anything that gets past the
+# client validator is malformed enough that it's not worth storing.
+_EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+
+
+class WaitlistRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=254, pattern=_EMAIL_PATTERN)
+    referrer: str | None = Field(default=None, max_length=500)
+
+
+class WaitlistResponse(BaseModel):
+    ok: bool
+    position: int
+
+
+@router.post("/waitlist", response_model=WaitlistResponse)
+async def waitlist_endpoint(
+    req: WaitlistRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> WaitlistResponse:
+    """Public POST: capture a marketing-page signup.
+
+    Idempotent on email: ON CONFLICT DO NOTHING + lookup-by-email returns the
+    same id (= position in line) on duplicate submissions, so we don't leak
+    'already signed up' info to the caller.
+    """
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    email = req.email.strip().lower()
+    referrer = (req.referrer or "").strip()[:500] or None
+
+    stmt = (
+        pg_insert(WaitlistSignup)
+        .values(email=email, referrer=referrer)
+        .on_conflict_do_nothing(index_elements=["email"])
+    )
+    await session.execute(stmt)
+    await session.commit()
+
+    pos = (
+        await session.execute(
+            select(WaitlistSignup.id).where(WaitlistSignup.email == email)
+        )
+    ).scalar_one()
+    return WaitlistResponse(ok=True, position=pos)
 
 
 class SearchRequest(BaseModel):
