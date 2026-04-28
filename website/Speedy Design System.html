@@ -1,0 +1,1341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Speedy — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    /* ── Speedy tokens (canonical) ─────────────────────────────────────── */
+    /* Brand */
+    --speedy-purple: #7C5CFF;
+    --speedy-purple-pressed: #6B4DEF;
+    --speedy-purple-tint: rgba(124,92,255,0.18);
+    --speedy-purple-subtle: rgba(124,92,255,0.10);
+
+    /* Backgrounds (dark mode primary) */
+    --bg-system: #0B0B0E;          /* desktop / page bg behind everything */
+    --bg-elevated: #18181C;         /* solid panel fallback (no blur) */
+    --bg-elevated-2: #1F1F24;
+
+    /* Material — emulates .regularMaterial dark */
+    --mat-tint: rgba(28,28,32,0.62);
+    --mat-tint-thick: rgba(20,20,24,0.78);
+    --mat-tint-thin: rgba(40,40,46,0.42);
+
+    /* Separators / borders */
+    --separator: rgba(255,255,255,0.08);
+    --separator-strong: rgba(255,255,255,0.14);
+    --separator-opaque: #2A2A30;
+
+    /* Labels (system-semantic) */
+    --label: rgba(255,255,255,0.96);
+    --label-secondary: rgba(255,255,255,0.62);
+    --label-tertiary: rgba(255,255,255,0.40);
+    --label-quaternary: rgba(255,255,255,0.22);
+
+    /* Fills */
+    --fill: rgba(255,255,255,0.08);
+    --fill-secondary: rgba(255,255,255,0.05);
+    --fill-tertiary: rgba(255,255,255,0.03);
+    --fill-quaternary: rgba(255,255,255,0.02);
+
+    /* Semantic — system colors mapped */
+    --green: #30D158;        /* systemGreen dark */
+    --red:   #FF453A;        /* systemRed dark */
+    --orange:#FF9F0A;
+    --yellow:#FFD60A;
+    --blue:  #0A84FF;
+
+    /* Motion */
+    --ease: cubic-bezier(0.2, 0, 0, 1);   /* ease-out, native-feeling */
+    --t-fast: 80ms;
+    --t-base: 120ms;
+    --t-slow: 180ms;
+
+    /* Radii */
+    --r-xs: 4px;
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 18px;
+    --r-2xl: 22px;
+
+    /* Shadow */
+    --shadow-overlay: 0 24px 60px rgba(0,0,0,0.45), 0 8px 20px rgba(0,0,0,0.25), inset 0 0 0 0.5px var(--separator-strong);
+    --shadow-pop: 0 12px 32px rgba(0,0,0,0.35), inset 0 0 0 0.5px var(--separator-strong);
+    --shadow-chip: 0 6px 18px rgba(0,0,0,0.40), inset 0 0 0 0.5px var(--separator-strong);
+
+    /* Spacing — 4pt grid */
+    --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+    --s-5: 20px; --s-6: 24px; --s-7: 32px; --s-8: 40px;
+    --s-9: 56px; --s-10: 72px;
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(800px 500px at 80% -10%, rgba(124,92,255,0.10), transparent 60%),
+      radial-gradient(700px 400px at 5% 30%, rgba(124,92,255,0.05), transparent 60%),
+      var(--bg-system);
+    color:var(--label);
+    font-family:'Inter','SF Pro Text',-apple-system,system-ui,sans-serif;
+    font-size:14px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    letter-spacing:-0.005em;
+  }
+
+  .mono{font-family:'JetBrains Mono','SF Mono',ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;letter-spacing:0}
+
+  /* ── Layout ──────────────────────────────────────────────────────────── */
+  .page{max-width:1200px;margin:0 auto;padding:80px 56px 160px}
+  @media (max-width: 720px){ .page{padding:48px 20px 80px} }
+
+  .hero{display:grid;grid-template-columns:1fr;gap:48px;margin-bottom:120px;align-items:end}
+  @media (min-width: 900px){ .hero{grid-template-columns:1.1fr 1fr} }
+
+  .hero-meta{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:5px 10px 5px 6px;border-radius:999px;
+    background:var(--fill);border:0.5px solid var(--separator);
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--label-secondary);
+    letter-spacing:0.04em;text-transform:uppercase;margin-bottom:24px;
+  }
+  .hero h1{
+    font-size:clamp(40px, 5.5vw, 72px);
+    line-height:0.98;letter-spacing:-0.035em;
+    font-weight:600;margin:0 0 20px;
+    text-wrap:balance;
+  }
+  .hero h1 em{font-style:normal;color:var(--speedy-purple);font-weight:600}
+  .hero p.lede{
+    font-size:17px;line-height:1.5;color:var(--label-secondary);
+    max-width:540px;margin:0;text-wrap:pretty;
+  }
+  .hero-side{
+    background:var(--mat-tint);
+    backdrop-filter:blur(40px) saturate(180%);
+    -webkit-backdrop-filter:blur(40px) saturate(180%);
+    border:0.5px solid var(--separator-strong);
+    border-radius:var(--r-xl);
+    padding:24px;
+    box-shadow:var(--shadow-overlay);
+  }
+
+  section{margin:120px 0;scroll-margin-top:40px}
+  section > header{margin-bottom:40px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+  section h2{
+    font-size:13px;font-family:'JetBrains Mono',monospace;
+    letter-spacing:0.16em;text-transform:uppercase;
+    color:var(--label-tertiary);font-weight:600;margin:0;
+  }
+  section h3{
+    font-size:32px;line-height:1.05;letter-spacing:-0.025em;
+    font-weight:600;margin:6px 0 0;text-wrap:balance;max-width:680px;
+  }
+  section .desc{color:var(--label-secondary);max-width:540px;font-size:14px;line-height:1.5}
+
+  /* ── Cards ───────────────────────────────────────────────────────────── */
+  .grid{display:grid;gap:16px}
+  .grid-2{grid-template-columns:repeat(auto-fit, minmax(360px, 1fr))}
+  .grid-3{grid-template-columns:repeat(auto-fit, minmax(280px, 1fr))}
+  .grid-4{grid-template-columns:repeat(auto-fit, minmax(200px, 1fr))}
+
+  .card{
+    background:var(--bg-elevated);
+    border:0.5px solid var(--separator);
+    border-radius:var(--r-lg);
+    padding:20px;
+    position:relative;
+  }
+  .card.dim{background:var(--fill-tertiary)}
+
+  .card-head{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:14px;font-size:11px;
+    color:var(--label-tertiary);
+    font-family:'JetBrains Mono',monospace;letter-spacing:0.06em;text-transform:uppercase;
+  }
+  .card-head .dot{width:6px;height:6px;border-radius:50%;background:var(--speedy-purple)}
+
+  .row{display:flex;align-items:center;gap:12px}
+  .between{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .stack{display:flex;flex-direction:column;gap:8px}
+
+  .micro{font-size:10.5px;color:var(--label-tertiary);
+    font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;text-transform:uppercase}
+
+  /* Token rows */
+  .token{
+    display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;
+    padding:10px 0;border-bottom:0.5px solid var(--separator);
+  }
+  .token:last-child{border-bottom:0}
+  .swatch{width:36px;height:36px;border-radius:8px;border:0.5px solid var(--separator-strong)}
+  .token .name{font-weight:500;font-size:13px}
+  .token .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--label-tertiary)}
+  .token .val{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--label-secondary);text-align:right}
+
+  /* ── Code ────────────────────────────────────────────────────────────── */
+  pre.code{
+    background:#0F0F12;
+    border:0.5px solid var(--separator);
+    border-radius:var(--r-md);
+    padding:14px 16px;
+    overflow:auto;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;line-height:1.55;
+    color:#D9D9DE;margin:0;
+  }
+  pre.code .k{color:#FF7AB6}
+  pre.code .s{color:#FFD479}
+  pre.code .c{color:#7B8794}
+  pre.code .n{color:#82E0AA}
+  pre.code .t{color:#80B7FF}
+
+  /* ── Speedy mark ─────────────────────────────────────────────────────── */
+  .speedy-tile{
+    width:64px;height:64px;border-radius:14px;
+    background:linear-gradient(160deg, #8E72FF 0%, var(--speedy-purple) 50%, #5E3FE0 100%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.32),
+      inset 0 -1px 0 rgba(0,0,0,0.18),
+      0 6px 18px rgba(124,92,255,0.30),
+      0 0 0 0.5px rgba(0,0,0,0.4);
+    flex-shrink:0;
+  }
+  .speedy-tile.sm{width:22px;height:22px;border-radius:5px}
+  .speedy-tile.md{width:36px;height:36px;border-radius:8px}
+  .speedy-tile.lg{width:96px;height:96px;border-radius:22px}
+  .speedy-tile.xl{width:160px;height:160px;border-radius:36px;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,0.32),inset 0 -2px 0 rgba(0,0,0,0.18),0 18px 50px rgba(124,92,255,0.40),0 0 0 0.5px rgba(0,0,0,0.4)}
+
+  .bolt-svg{filter:drop-shadow(0 1px 0 rgba(0,0,0,0.18))}
+
+  /* ── Materials demo background (so glass actually feels like glass) ──── */
+  .glassbed{
+    position:relative;border-radius:var(--r-lg);overflow:hidden;
+    background:
+      radial-gradient(circle at 22% 28%, oklch(0.62 0.24 25) 0%, transparent 35%),
+      radial-gradient(circle at 78% 64%, oklch(0.55 0.22 280) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, oklch(0.50 0.20 200) 0%, transparent 35%),
+      #1A1A1F;
+    padding:32px;min-height:240px;
+    display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;
+  }
+
+  .material{
+    border-radius:var(--r-lg);padding:18px 22px;min-width:180px;
+    box-shadow:var(--shadow-pop);
+    border:0.5px solid var(--separator-strong);
+  }
+  .material .micro{margin-bottom:6px}
+  .material .lbl{font-weight:600;font-size:14px;color:#fff}
+  .mat-thick{
+    background:var(--mat-tint-thick);
+    backdrop-filter:blur(60px) saturate(180%);
+    -webkit-backdrop-filter:blur(60px) saturate(180%);
+  }
+  .mat-regular{
+    background:var(--mat-tint);
+    backdrop-filter:blur(40px) saturate(180%);
+    -webkit-backdrop-filter:blur(40px) saturate(180%);
+  }
+  .mat-thin{
+    background:var(--mat-tint-thin);
+    backdrop-filter:blur(20px) saturate(170%);
+    -webkit-backdrop-filter:blur(20px) saturate(170%);
+  }
+
+  /* ── Trade overlay (the canonical component) ─────────────────────────── */
+  .overlay{
+    width:320px;
+    background:var(--mat-tint);
+    backdrop-filter:blur(40px) saturate(180%);
+    -webkit-backdrop-filter:blur(40px) saturate(180%);
+    border:0.5px solid var(--separator-strong);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-overlay);
+    overflow:hidden;
+    color:var(--label);
+  }
+  .ov-row{padding:11px 14px;border-bottom:0.5px solid var(--separator)}
+  .ov-row:last-child{border-bottom:0}
+  .ov-row.tight{padding:8px 14px}
+
+  .pill{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:2px 6px;border-radius:4px;
+    font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;
+    letter-spacing:0.06em;text-transform:uppercase;
+  }
+  .pill.brand{background:var(--speedy-purple-tint);color:var(--speedy-purple)}
+  .pill.green{background:rgba(48,209,88,0.18);color:var(--green)}
+  .pill.red{background:rgba(255,69,58,0.18);color:var(--red)}
+  .pill.neutral{background:var(--fill);color:var(--label-secondary)}
+
+  /* Buttons */
+  .btn{
+    appearance:none;border:0;
+    height:32px;padding:0 12px;border-radius:var(--r-sm);
+    font-family:inherit;font-size:13px;font-weight:600;letter-spacing:-0.005em;
+    cursor:pointer;transition:background var(--t-fast) var(--ease),filter var(--t-fast) var(--ease);
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    color:var(--label);
+  }
+  .btn.primary{background:var(--speedy-purple);color:#fff}
+  .btn.primary:hover{background:var(--speedy-purple-pressed)}
+  .btn.secondary{background:var(--fill);color:var(--label)}
+  .btn.secondary:hover{background:rgba(255,255,255,0.12)}
+  .btn.green{background:var(--green);color:#062911}
+  .btn.red{background:var(--red);color:#2A0707}
+  .btn.ghost{background:transparent;color:var(--label-secondary)}
+  .btn.ghost:hover{background:var(--fill-secondary);color:var(--label)}
+  .btn.lg{height:40px;padding:0 16px;border-radius:var(--r-md);font-size:14px}
+  .btn.sm{height:24px;padding:0 9px;font-size:12px;border-radius:var(--r-xs)}
+
+  .kbd{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:20px;height:20px;padding:0 6px;
+    background:var(--fill);border:0.5px solid var(--separator-strong);
+    border-radius:var(--r-xs);
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;
+    color:var(--label);line-height:1;
+    box-shadow:inset 0 -1px 0 rgba(0,0,0,0.20);
+  }
+
+  /* Segmented */
+  .seg{
+    display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;
+    background:var(--fill-secondary);border-radius:var(--r-sm);padding:2px;
+    height:32px;
+  }
+  .seg button{
+    appearance:none;border:0;background:transparent;color:var(--label-secondary);
+    font-family:inherit;font-size:12.5px;font-weight:500;
+    border-radius:5px;cursor:pointer;
+    transition:background var(--t-fast) var(--ease),color var(--t-fast) var(--ease);
+  }
+  .seg button.on{background:var(--fill);color:var(--label);box-shadow:inset 0 0 0 0.5px var(--separator-strong)}
+  .seg.bold button.on.green{background:var(--green);color:#062911}
+  .seg.bold button.on.red{background:var(--red);color:#2A0707}
+
+  /* Inputs */
+  .field{
+    display:flex;align-items:center;gap:6px;
+    height:38px;padding:0 12px;
+    background:rgba(0,0,0,0.30);
+    border:0.5px solid var(--separator);
+    border-radius:var(--r-md);
+    transition:border-color var(--t-fast) var(--ease),background var(--t-fast) var(--ease);
+  }
+  .field:focus-within{border-color:var(--speedy-purple);background:rgba(0,0,0,0.42)}
+  .field .prefix{color:var(--label-tertiary);font-family:'JetBrains Mono',monospace;font-size:14px}
+  .field input{
+    flex:1;border:0;background:transparent;outline:none;color:var(--label);
+    font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;letter-spacing:-0.01em;
+    -moz-appearance:textfield;min-width:0;
+  }
+  .field input::-webkit-outer-spin-button,.field input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+  /* Badges */
+  .market-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    padding:2px 6px;border-radius:3px;
+    font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;
+    letter-spacing:0.06em;color:#0e0e10;
+  }
+  .mb-pred{background:#A88AFF}
+  .mb-stock{background:#7AC5FF}
+  .mb-perp{background:#FFB068}
+  .mb-comm{background:#E0CC7A}
+
+  /* Match excerpt */
+  .excerpt{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:3px 7px;border-radius:5px;
+    background:var(--speedy-purple-subtle);
+    border:0.5px solid var(--speedy-purple-tint);
+    font-size:11px;color:var(--label-secondary);
+    font-style:italic;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+
+  /* Anatomy callouts */
+  .anatomy{position:relative;padding:32px;background:var(--fill-tertiary);border-radius:var(--r-lg);border:0.5px solid var(--separator)}
+  .anatomy .stage{display:flex;justify-content:center;padding:24px 0}
+  .callout{
+    position:absolute;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--speedy-purple);letter-spacing:0.04em;
+    display:flex;align-items:center;gap:8px;
+    pointer-events:none;
+  }
+  .callout .line{flex:1;height:1px;background:var(--speedy-purple);min-width:24px;opacity:0.6}
+  .callout .num{
+    width:18px;height:18px;border-radius:50%;
+    background:var(--speedy-purple);color:#0e0e10;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;flex-shrink:0;
+  }
+
+  /* Motion tracks */
+  .motion-row{display:grid;grid-template-columns:140px 1fr 80px;gap:14px;align-items:center;
+    padding:10px 0;border-bottom:0.5px solid var(--separator)}
+  .motion-row:last-child{border-bottom:0}
+  .track{height:28px;background:var(--fill-secondary);border-radius:6px;position:relative;overflow:hidden}
+  .track .bar{position:absolute;top:50%;height:6px;border-radius:3px;background:var(--speedy-purple);transform:translateY(-50%);left:6px}
+
+  /* Type sample */
+  .typesample{display:grid;grid-template-columns:180px 1fr;gap:24px;align-items:baseline;
+    padding:16px 0;border-bottom:0.5px solid var(--separator)}
+  .typesample:last-child{border-bottom:0}
+  .typesample .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--label-tertiary);letter-spacing:0.04em}
+  .typesample .demo{color:var(--label)}
+
+  /* Spacing scale */
+  .space-row{display:grid;grid-template-columns:60px 80px 1fr;gap:16px;align-items:center;padding:6px 0}
+  .space-bar{height:8px;background:var(--speedy-purple);border-radius:2px}
+
+  /* Section nav */
+  nav.toc{
+    position:sticky;top:24px;align-self:start;
+    background:var(--mat-tint);
+    backdrop-filter:blur(30px) saturate(170%);
+    -webkit-backdrop-filter:blur(30px) saturate(170%);
+    border:0.5px solid var(--separator-strong);
+    border-radius:var(--r-md);
+    padding:10px;
+    display:flex;flex-direction:column;gap:2px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+  }
+  nav.toc a{
+    display:block;padding:6px 10px;border-radius:var(--r-xs);
+    color:var(--label-secondary);text-decoration:none;
+    transition:background var(--t-fast) var(--ease),color var(--t-fast) var(--ease);
+    letter-spacing:0.04em;
+  }
+  nav.toc a:hover{background:var(--fill);color:var(--label)}
+  nav.toc .num{color:var(--label-tertiary);margin-right:8px;font-weight:500}
+
+  .doc-grid{display:grid;grid-template-columns:1fr;gap:48px}
+  @media (min-width: 1100px){ .doc-grid{grid-template-columns:200px 1fr;gap:64px} }
+
+  /* Status indicator */
+  .status{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;color:var(--label-tertiary);letter-spacing:0.04em;text-transform:uppercase}
+  .status .dot{width:6px;height:6px;border-radius:50%}
+  .status .dot.live{background:var(--green);box-shadow:0 0 0 2px rgba(48,209,88,0.18)}
+  .status .dot.deferred{background:var(--orange)}
+
+  /* Footer */
+  footer{margin-top:120px;padding-top:32px;border-top:0.5px solid var(--separator);
+    color:var(--label-tertiary);font-size:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+
+  /* Note callout */
+  .note{
+    background:var(--speedy-purple-subtle);
+    border:0.5px solid var(--speedy-purple-tint);
+    border-left:2px solid var(--speedy-purple);
+    border-radius:var(--r-md);
+    padding:12px 14px;font-size:12.5px;color:var(--label-secondary);
+    margin:16px 0;line-height:1.5;
+  }
+  .note b{color:var(--label)}
+
+  /* Logo lockups */
+  .lockup-row{display:flex;align-items:center;gap:14px;padding:18px 22px;
+    background:var(--bg-elevated);border:0.5px solid var(--separator);border-radius:var(--r-md)}
+  .wordmark{font-size:24px;font-weight:600;letter-spacing:-0.025em;color:var(--label)}
+
+  /* Component preview frame */
+  .preview{
+    background:
+      radial-gradient(circle at 30% 20%, rgba(124,92,255,0.10), transparent 60%),
+      var(--bg-elevated);
+    border:0.5px solid var(--separator);
+    border-radius:var(--r-lg);
+    padding:32px;
+    display:flex;align-items:center;justify-content:center;
+    min-height:160px;
+  }
+  .preview.compact{padding:20px;min-height:0}
+
+  /* Don't / Do */
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .pair .card{position:relative}
+  .badge-bad,.badge-good{
+    position:absolute;top:12px;right:12px;
+    padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;
+    font-size:10px;font-weight:700;letter-spacing:0.06em;
+  }
+  .badge-bad{background:rgba(255,69,58,0.20);color:var(--red)}
+  .badge-good{background:rgba(48,209,88,0.20);color:var(--green)}
+
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<!-- ─── HERO ──────────────────────────────────────────────────────────── -->
+<div class="hero">
+  <div>
+    <div class="hero-meta">
+      <span class="speedy-tile sm">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" class="bolt-svg"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg>
+      </span>
+      <span>SPEEDY · DESIGN SYSTEM v0.1</span>
+      <span style="color:var(--label-quaternary)">·</span>
+      <span>Apr 25, 2026</span>
+    </div>
+    <h1>Trade where you <em>read.</em></h1>
+    <p class="lede">Speedy is a system-level cursor companion. It runs on your computer, listens for a hotkey, and matches whatever you've highlighted to a tradeable market. This document specifies every token, surface, component, and motion an engineer needs to ship it natively in SwiftUI.</p>
+    <div style="display:flex;gap:8px;margin-top:24px;flex-wrap:wrap">
+      <span class="status"><span class="dot live"></span>Dark mode · live</span>
+      <span class="status" style="margin-left:16px"><span class="dot deferred"></span>Light mode · deferred</span>
+      <span class="status" style="margin-left:16px"><span class="dot live"></span>macOS 14+ · primary target</span>
+    </div>
+  </div>
+
+  <!-- Hero overlay preview -->
+  <div class="hero-side">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="speedy-tile sm">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg>
+        </span>
+        <span class="mono" style="font-size:10.5px;color:var(--label-tertiary);letter-spacing:0.06em">SPEEDY</span>
+      </div>
+      <span class="mono" style="font-size:10px;color:var(--label-quaternary)">⌘⏎ confirm · esc</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="market-badge mb-pred">PRED</span>
+        <span class="mono" style="font-size:10px;color:var(--label-tertiary);letter-spacing:0.04em">POLYMARKET</span>
+      </div>
+      <span class="excerpt">"…May rate cut…"</span>
+    </div>
+    <div style="font-weight:600;font-size:14px;margin-bottom:8px;line-height:1.3">Fed cuts rates at May 7 meeting?</div>
+    <div style="display:flex;align-items:baseline;gap:10px;font-family:'JetBrains Mono',monospace;margin-bottom:14px">
+      <span style="font-size:26px;font-weight:600;letter-spacing:-0.015em">62¢</span>
+      <span style="font-size:11.5px;color:var(--green)">▲ 4¢</span>
+      <span style="font-size:10.5px;color:var(--label-tertiary);margin-left:auto">vol $8.4M</span>
+    </div>
+    <div class="seg bold" style="margin-bottom:12px">
+      <button class="on green">Yes 62¢</button>
+      <button>No 38¢</button>
+    </div>
+    <div class="field" style="margin-bottom:8px">
+      <span class="prefix">$</span>
+      <input value="100" readonly/>
+    </div>
+    <div style="display:flex;gap:4px;margin-bottom:14px">
+      <button class="btn sm secondary" style="flex:1">$25</button>
+      <button class="btn sm secondary" style="flex:1;background:var(--label);color:var(--bg-system)">$100</button>
+      <button class="btn sm secondary" style="flex:1">$500</button>
+      <button class="btn sm secondary" style="flex:1">$1k</button>
+    </div>
+    <button class="btn lg green" style="width:100%">Buy Yes · $100 <span style="opacity:0.55;margin-left:6px">⌘⏎</span></button>
+  </div>
+</div>
+
+<div class="doc-grid">
+<nav class="toc">
+  <a href="#tokens"><span class="num">01</span>Tokens</a>
+  <a href="#brand"><span class="num">02</span>Brand</a>
+  <a href="#typography"><span class="num">03</span>Typography</a>
+  <a href="#color"><span class="num">04</span>Color</a>
+  <a href="#materials"><span class="num">05</span>Materials</a>
+  <a href="#spacing"><span class="num">06</span>Spacing</a>
+  <a href="#components"><span class="num">07</span>Components</a>
+  <a href="#overlay"><span class="num">08</span>Trade overlay</a>
+  <a href="#motion"><span class="num">09</span>Motion</a>
+  <a href="#a11y"><span class="num">10</span>Accessibility</a>
+  <a href="#voice"><span class="num">11</span>Voice & copy</a>
+  <a href="#donts"><span class="num">12</span>Do / Don't</a>
+</nav>
+
+<div>
+
+<!-- ─── 01 TOKENS OVERVIEW ────────────────────────────────────────────── -->
+<section id="tokens">
+  <header>
+    <div>
+      <h2>01 — Tokens</h2>
+      <h3>The schema is the contract.</h3>
+    </div>
+    <p class="desc">Every value in the system maps to a named token. Engineers reference tokens; designers tune values. Nothing in the codebase should hard-code a hex, radius, or duration outside this file.</p>
+  </header>
+
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-head"><span>Brand</span><span class="dot"></span></div>
+      <div class="stack">
+        <div class="row"><div class="swatch" style="background:#7C5CFF"></div><div style="flex:1"><div style="font-weight:600">speedy.purple</div><div class="micro">primary brand · accent</div></div><div class="mono" style="font-size:11px;color:var(--label-secondary)">#7C5CFF</div></div>
+        <div class="row"><div class="swatch" style="background:#6B4DEF"></div><div style="flex:1"><div style="font-weight:600">speedy.purple.pressed</div><div class="micro">active state</div></div><div class="mono" style="font-size:11px;color:var(--label-secondary)">#6B4DEF</div></div>
+        <div class="row"><div class="swatch" style="background:rgba(124,92,255,0.18);border:0.5px solid var(--speedy-purple-tint)"></div><div style="flex:1"><div style="font-weight:600">speedy.purple.tint</div><div class="micro">selection · highlight bg</div></div><div class="mono" style="font-size:11px;color:var(--label-secondary)">α 0.18</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>Surface</span></div>
+      <div class="stack">
+        <div class="row"><div class="swatch" style="background:#0B0B0E"></div><div style="flex:1"><div style="font-weight:600">bg.system</div><div class="micro">desktop · root</div></div><div class="mono" style="font-size:11px;color:var(--label-secondary)">#0B0B0E</div></div>
+        <div class="row"><div class="swatch" style="background:#18181C"></div><div style="flex:1"><div style="font-weight:600">bg.elevated</div><div class="micro">solid panels</div></div><div class="mono" style="font-size:11px;color:var(--label-secondary)">#18181C</div></div>
+        <div class="row"><div class="swatch" style="background:rgba(28,28,32,0.62)"></div><div style="flex:1"><div style="font-weight:600">material.regular</div><div class="micro">overlay default</div></div><div class="mono" style="font-size:11px;color:var(--label-secondary)">α 0.62 + blur</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>Semantic</span></div>
+      <div class="stack">
+        <div class="row"><div class="swatch" style="background:#30D158"></div><div style="flex:1"><div style="font-weight:600">color.green</div><div class="micro">positive · buy · yes</div></div><div class="mono" style="font-size:11px;color:var(--label-secondary)">systemGreen</div></div>
+        <div class="row"><div class="swatch" style="background:#FF453A"></div><div style="flex:1"><div style="font-weight:600">color.red</div><div class="micro">negative · sell · no</div></div><div class="mono" style="font-size:11px;color:var(--label-secondary)">systemRed</div></div>
+        <div class="row"><div class="swatch" style="background:#FF9F0A"></div><div style="flex:1"><div style="font-weight:600">color.orange</div><div class="micro">warning · low confidence</div></div><div class="mono" style="font-size:11px;color:var(--label-secondary)">systemOrange</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:24px">
+    <b>Implementation.</b> Tokens are exported as a generated <code class="mono">SpeedyTokens.swift</code> with <code class="mono">extension Color { static let speedyPurple = Color(red:0.486, green:0.361, blue:1.0) }</code> etc. CSS custom properties in this doc are the source of truth; the SwiftUI file is generated from JSON via a build script — no hand-typed hex in feature code.
+  </div>
+</section>
+
+<!-- ─── 02 BRAND / MARK ───────────────────────────────────────────────── -->
+<section id="brand">
+  <header>
+    <div>
+      <h2>02 — Brand</h2>
+      <h3>One mark. One color. One feel.</h3>
+    </div>
+    <p class="desc">The mark is a lightning bolt inside a rounded-square tile. <b style="color:var(--label)">Placeholder</b> — pending sign-off on the iconographic direction (bolt vs. reticle vs. cursor-with-line). The wordmark is "Speedy" set in SF Pro Display Semibold, tightened tracking.</p>
+  </header>
+
+  <div class="grid grid-2" style="margin-bottom:24px">
+    <div class="card">
+      <div class="card-head"><span>App icon · 1024 reference</span><span class="mono">macOS</span></div>
+      <div style="display:flex;justify-content:center;padding:32px 0">
+        <div class="speedy-tile xl">
+          <svg width="86" height="86" viewBox="0 0 24 24" fill="none" class="bolt-svg"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-around;align-items:flex-end;padding-top:12px;border-top:0.5px solid var(--separator)">
+        <div class="speedy-tile lg"><svg width="52" height="52" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg></div>
+        <div class="speedy-tile"><svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg></div>
+        <div class="speedy-tile md"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg></div>
+        <div class="speedy-tile sm"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg></div>
+      </div>
+      <div class="micro" style="text-align:center;margin-top:8px">160 · 96 · 64 · 36 · 22</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span>Menu bar template · monochrome</span><span class="mono">18×18</span></div>
+      <div style="display:flex;justify-content:center;align-items:center;gap:24px;padding:32px 0">
+        <!-- Active state -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div style="background:rgba(0,0,0,0.32);padding:8px 12px;border-radius:6px;display:flex;align-items:center;gap:8px;border:0.5px solid var(--separator)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg>
+          </div>
+          <span class="micro">idle</span>
+        </div>
+        <!-- Armed -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div style="background:var(--speedy-purple);padding:8px 12px;border-radius:6px;display:flex;align-items:center;gap:8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#0e0e10"/></svg>
+          </div>
+          <span class="micro">armed</span>
+        </div>
+        <!-- In flight -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div style="background:rgba(0,0,0,0.32);padding:8px 12px;border-radius:6px;display:flex;align-items:center;gap:8px;border:0.5px solid var(--separator)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="var(--green)" style="fill:#30D158"/></svg>
+          </div>
+          <span class="micro">in flight</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="lockup-row">
+      <div class="speedy-tile md"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg></div>
+      <span class="wordmark">Speedy</span>
+    </div>
+    <div class="lockup-row">
+      <div class="speedy-tile md"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg></div>
+      <div>
+        <div class="wordmark" style="font-size:18px">Speedy</div>
+        <div class="mono" style="font-size:10.5px;color:var(--label-tertiary);letter-spacing:0.08em;text-transform:uppercase">Trade where you read</div>
+      </div>
+    </div>
+    <div class="lockup-row" style="background:var(--speedy-purple);color:#fff">
+      <div style="background:rgba(255,255,255,0.18);width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(20px)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg>
+      </div>
+      <span class="wordmark" style="color:#fff">Speedy</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Decisions to confirm.</b> Lightning bolt is a placeholder. Alternatives: target reticle (hits the "matched market" metaphor), cursor arrow with crosshair (signals system-level), or an abstract glyph. Vote before pixels are shipped to TestFlight.
+  </div>
+</section>
+
+<!-- ─── 03 TYPOGRAPHY ─────────────────────────────────────────────────── -->
+<section id="typography">
+  <header>
+    <div>
+      <h2>03 — Typography</h2>
+      <h3>SF Pro for prose. SF Mono for prices.</h3>
+    </div>
+    <p class="desc">Prices, sizes, percentages, and tickers are <b style="color:var(--label)">always</b> rendered with <code class="mono">.monospacedDigit()</code> so live ticks don't shift kerning. Body labels follow Apple's text style scale (.body, .callout, .caption2…). Display sizes are custom for the overlay and onboarding only.</p>
+  </header>
+
+  <div class="card">
+    <div class="typesample">
+      <div class="meta"><div>display.lg</div><div style="color:var(--label-quaternary)">SF Pro Display · 600 · -2.5%</div></div>
+      <div class="demo" style="font-size:48px;font-weight:600;letter-spacing:-0.025em;line-height:1.05">Trade where you read.</div>
+    </div>
+    <div class="typesample">
+      <div class="meta"><div>display.md</div><div style="color:var(--label-quaternary)">SF Pro Display · 600 · -2%</div></div>
+      <div class="demo" style="font-size:32px;font-weight:600;letter-spacing:-0.02em;line-height:1.1">Powell signals patience</div>
+    </div>
+    <div class="typesample">
+      <div class="meta"><div>title</div><div style="color:var(--label-quaternary)">SF Pro Text · 600 · -1%</div></div>
+      <div class="demo" style="font-size:17px;font-weight:600;letter-spacing:-0.01em">Fed cuts rates at May 7 meeting?</div>
+    </div>
+    <div class="typesample">
+      <div class="meta"><div>body</div><div style="color:var(--label-quaternary)">SF Pro Text · 400 · 0</div></div>
+      <div class="demo" style="font-size:14px">The system is meaningfully data-dependent heading into May.</div>
+    </div>
+    <div class="typesample">
+      <div class="meta"><div>caption</div><div style="color:var(--label-quaternary)">SF Pro Text · 500 · 0</div></div>
+      <div class="demo" style="font-size:12px;color:var(--label-secondary)">Position size, fees, and execution venue</div>
+    </div>
+    <div class="typesample">
+      <div class="meta"><div>price.xl</div><div style="color:var(--label-quaternary)">SF Mono · 600 · monospacedDigit</div></div>
+      <div class="demo mono" style="font-size:32px;font-weight:600;letter-spacing:-0.02em">$71,240.00 <span style="font-size:14px;color:var(--green);font-weight:500">+2.62%</span></div>
+    </div>
+    <div class="typesample">
+      <div class="meta"><div>price.md</div><div style="color:var(--label-quaternary)">SF Mono · 600</div></div>
+      <div class="demo mono" style="font-size:22px;font-weight:600;letter-spacing:-0.015em">62¢ <span style="font-size:12px;color:var(--green)">▲ 4¢</span></div>
+    </div>
+    <div class="typesample">
+      <div class="meta"><div>label.kbd</div><div style="color:var(--label-quaternary)">SF Mono · 600 · 0.06em</div></div>
+      <div class="demo mono" style="font-size:11px;letter-spacing:0.06em;color:var(--label-secondary);text-transform:uppercase">SPEEDY · ARMED · ⌘⏎ CONFIRM</div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:24px">
+    <div class="card">
+      <div class="card-head"><span>SwiftUI · price text</span></div>
+      <pre class="code"><span class="c">// Always use .monospacedDigit() on live tickers</span>
+<span class="k">Text</span>(price.formatted(.currency(code: <span class="s">"USD"</span>)))
+    .font(.system(size: <span class="n">22</span>, weight: .semibold, design: .monospaced))
+    .monospacedDigit()
+    .kerning(<span class="n">-0.3</span>)
+    .foregroundStyle(.primary)</pre>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>SwiftUI · text style scale</span></div>
+      <pre class="code"><span class="k">extension</span> <span class="t">Font</span> {
+    <span class="k">static let</span> speedyTitle = .system(size: <span class="n">17</span>, weight: .semibold)
+        .leading(.tight)
+    <span class="k">static let</span> speedyBody  = .system(size: <span class="n">14</span>, weight: .regular)
+    <span class="k">static let</span> speedyMono  = .system(size: <span class="n">13</span>, weight: .medium,
+                                       design: .monospaced)
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ─── 04 COLOR ──────────────────────────────────────────────────────── -->
+<section id="color">
+  <header>
+    <div>
+      <h2>04 — Color</h2>
+      <h3>Speedy purple. System everything else.</h3>
+    </div>
+    <p class="desc">There is exactly one brand color. Status (positive/negative/warning) maps to system semantic colors so the app respects user accent settings and Increase Contrast mode automatically.</p>
+  </header>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-head"><span>Brand</span><span>1 hue</span></div>
+      <div>
+        <div class="token"><div class="swatch" style="background:#7C5CFF"></div><div><div class="name">speedy.purple</div><div class="meta">primary · CTA · armed state</div></div><div class="val">#7C5CFF</div></div>
+        <div class="token"><div class="swatch" style="background:#6B4DEF"></div><div><div class="name">speedy.purple.pressed</div><div class="meta">on press / focus ring</div></div><div class="val">#6B4DEF</div></div>
+        <div class="token"><div class="swatch" style="background:rgba(124,92,255,0.18)"></div><div><div class="name">speedy.purple.tint</div><div class="meta">selection · armed pill bg</div></div><div class="val">α 18%</div></div>
+        <div class="token"><div class="swatch" style="background:rgba(124,92,255,0.10)"></div><div><div class="name">speedy.purple.subtle</div><div class="meta">match-excerpt bg</div></div><div class="val">α 10%</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span>Semantic · system mapped</span></div>
+      <div>
+        <div class="token"><div class="swatch" style="background:#30D158"></div><div><div class="name">color.positive</div><div class="meta">.systemGreen · buy · yes · gain</div></div><div class="val">#30D158</div></div>
+        <div class="token"><div class="swatch" style="background:#FF453A"></div><div><div class="name">color.negative</div><div class="meta">.systemRed · sell · no · loss</div></div><div class="val">#FF453A</div></div>
+        <div class="token"><div class="swatch" style="background:#FF9F0A"></div><div><div class="name">color.warning</div><div class="meta">.systemOrange · low confidence</div></div><div class="val">#FF9F0A</div></div>
+        <div class="token"><div class="swatch" style="background:#0A84FF"></div><div><div class="name">color.info</div><div class="meta">.systemBlue · links</div></div><div class="val">#0A84FF</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span>Labels · text on dark</span></div>
+      <div>
+        <div class="token"><div class="swatch" style="background:rgba(255,255,255,0.96)"></div><div><div class="name">label</div><div class="meta">primary text · prices</div></div><div class="val">α 96%</div></div>
+        <div class="token"><div class="swatch" style="background:rgba(255,255,255,0.62)"></div><div><div class="name">label.secondary</div><div class="meta">supporting text · meta</div></div><div class="val">α 62%</div></div>
+        <div class="token"><div class="swatch" style="background:rgba(255,255,255,0.40)"></div><div><div class="name">label.tertiary</div><div class="meta">labels · uppercase eyebrows</div></div><div class="val">α 40%</div></div>
+        <div class="token"><div class="swatch" style="background:rgba(255,255,255,0.22)"></div><div><div class="name">label.quaternary</div><div class="meta">disabled · placeholders</div></div><div class="val">α 22%</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span>Market type accents</span></div>
+      <div>
+        <div class="token"><div class="swatch" style="background:#A88AFF"></div><div><div class="name">market.prediction</div><div class="meta">PRED badge</div></div><div class="val">#A88AFF</div></div>
+        <div class="token"><div class="swatch" style="background:#7AC5FF"></div><div><div class="name">market.stock</div><div class="meta">STOCK badge</div></div><div class="val">#7AC5FF</div></div>
+        <div class="token"><div class="swatch" style="background:#FFB068"></div><div><div class="name">market.perp</div><div class="meta">PERP badge</div></div><div class="val">#FFB068</div></div>
+        <div class="token"><div class="swatch" style="background:#E0CC7A"></div><div><div class="name">market.commodity</div><div class="meta">COMM badge</div></div><div class="val">#E0CC7A</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Contrast.</b> All label tokens pass WCAG AA on <code class="mono">bg.system</code> and on <code class="mono">material.regular</code> over typical desktop wallpapers (verified with the 6 Apple-shipped 14.0 wallpapers + 4 brand wallpapers). Speedy purple as text on dark passes AA at 14pt+ and AAA at 18pt+.
+  </div>
+</section>
+
+<!-- ─── 05 MATERIALS ──────────────────────────────────────────────────── -->
+<section id="materials">
+  <header>
+    <div>
+      <h2>05 — Surfaces & Materials</h2>
+      <h3>Native blur. Adapts free.</h3>
+    </div>
+    <p class="desc">The trade overlay is <code class="mono">.regularMaterial</code>. Not a solid panel, not a custom blur — the native NSVisualEffectView so it picks up vibrancy, light-mode adaptation, Reduce Transparency, and accent color shifts at no cost.</p>
+  </header>
+
+  <div class="glassbed">
+    <div class="material mat-thick">
+      <div class="micro">.thickMaterial</div>
+      <div class="lbl">Modal sheets</div>
+    </div>
+    <div class="material mat-regular">
+      <div class="micro">.regularMaterial · default</div>
+      <div class="lbl">Trade overlay</div>
+    </div>
+    <div class="material mat-thin">
+      <div class="micro">.thinMaterial</div>
+      <div class="lbl">Hover inspector</div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:24px">
+    <div class="card">
+      <div class="card-head"><span>SwiftUI · overlay surface</span></div>
+      <pre class="code"><span class="k">struct</span> <span class="t">SpeedyOverlay</span>&lt;Content: <span class="t">View</span>&gt;: <span class="t">View</span> {
+    <span class="k">let</span> content: () -&gt; Content
+    <span class="k">var</span> body: <span class="k">some</span> <span class="t">View</span> {
+        content()
+            .background(.regularMaterial,
+                        in: <span class="t">RoundedRectangle</span>(cornerRadius: <span class="n">14</span>,
+                                                  style: .continuous))
+            .overlay(
+                <span class="t">RoundedRectangle</span>(cornerRadius: <span class="n">14</span>, style: .continuous)
+                    .strokeBorder(.white.opacity(<span class="n">0.14</span>), lineWidth: <span class="n">0.5</span>)
+            )
+            .shadow(color: .black.opacity(<span class="n">0.45</span>),
+                    radius: <span class="n">30</span>, x: <span class="n">0</span>, y: <span class="n">12</span>)
+    }
+}</pre>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>NSPanel host · always-on-top</span></div>
+      <pre class="code"><span class="k">let</span> panel = <span class="t">NSPanel</span>(
+    contentRect: rect,
+    styleMask: [.borderless, .nonactivatingPanel],
+    backing: .buffered, defer: <span class="k">false</span>
+)
+panel.level = .floating
+panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+panel.isOpaque = <span class="k">false</span>
+panel.backgroundColor = .clear
+panel.hasShadow = <span class="k">false</span>  <span class="c">// shadow drawn by SwiftUI</span>
+panel.contentView = <span class="t">NSHostingView</span>(rootView: <span class="t">SpeedyOverlay</span> { ... })</pre>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Reduce Transparency.</b> When the user enables Reduce Transparency in System Settings → Accessibility, the overlay falls back to <code class="mono">bg.elevated (#18181C)</code> with a 1px <code class="mono">separator-strong</code> border. The native material handles this automatically; we only need to pre-test the fallback contrast.
+  </div>
+</section>
+
+<!-- ─── 06 SPACING & RADIUS ───────────────────────────────────────────── -->
+<section id="spacing">
+  <header>
+    <div>
+      <h2>06 — Spacing & Radius</h2>
+      <h3>4-pt grid. Radii match Apple's hierarchy.</h3>
+    </div>
+    <p class="desc">All spacing is a multiple of 4. Radii are chosen so a parent always exceeds its child by at least 2pt, matching macOS's <code class="mono">RoundedRectangle(style: .continuous)</code> nesting.</p>
+  </header>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-head"><span>Spacing scale</span><span>4-pt</span></div>
+      <div class="space-row"><span class="mono" style="font-size:11px;color:var(--label-secondary)">s.1</span><span class="mono" style="font-size:11px;color:var(--label-tertiary)">4 px</span><div class="space-bar" style="width:4px"></div></div>
+      <div class="space-row"><span class="mono" style="font-size:11px;color:var(--label-secondary)">s.2</span><span class="mono" style="font-size:11px;color:var(--label-tertiary)">8 px</span><div class="space-bar" style="width:8px"></div></div>
+      <div class="space-row"><span class="mono" style="font-size:11px;color:var(--label-secondary)">s.3</span><span class="mono" style="font-size:11px;color:var(--label-tertiary)">12 px</span><div class="space-bar" style="width:12px"></div></div>
+      <div class="space-row"><span class="mono" style="font-size:11px;color:var(--label-secondary)">s.4</span><span class="mono" style="font-size:11px;color:var(--label-tertiary)">16 px</span><div class="space-bar" style="width:16px"></div></div>
+      <div class="space-row"><span class="mono" style="font-size:11px;color:var(--label-secondary)">s.5</span><span class="mono" style="font-size:11px;color:var(--label-tertiary)">20 px</span><div class="space-bar" style="width:20px"></div></div>
+      <div class="space-row"><span class="mono" style="font-size:11px;color:var(--label-secondary)">s.6</span><span class="mono" style="font-size:11px;color:var(--label-tertiary)">24 px</span><div class="space-bar" style="width:24px"></div></div>
+      <div class="space-row"><span class="mono" style="font-size:11px;color:var(--label-secondary)">s.7</span><span class="mono" style="font-size:11px;color:var(--label-tertiary)">32 px</span><div class="space-bar" style="width:32px"></div></div>
+      <div class="space-row"><span class="mono" style="font-size:11px;color:var(--label-secondary)">s.8</span><span class="mono" style="font-size:11px;color:var(--label-tertiary)">40 px</span><div class="space-bar" style="width:40px"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span>Radius scale</span><span>continuous</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div style="text-align:center">
+          <div style="width:60px;height:60px;background:var(--fill);border:0.5px solid var(--separator);border-radius:4px;margin:0 auto 6px"></div>
+          <div class="mono" style="font-size:11px;color:var(--label-secondary)">r.xs · 4</div>
+          <div class="micro">kbd · pills</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:60px;height:60px;background:var(--fill);border:0.5px solid var(--separator);border-radius:6px;margin:0 auto 6px"></div>
+          <div class="mono" style="font-size:11px;color:var(--label-secondary)">r.sm · 6</div>
+          <div class="micro">buttons · seg cells</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:60px;height:60px;background:var(--fill);border:0.5px solid var(--separator);border-radius:10px;margin:0 auto 6px"></div>
+          <div class="mono" style="font-size:11px;color:var(--label-secondary)">r.md · 10</div>
+          <div class="micro">inputs · tiles</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:60px;height:60px;background:var(--fill);border:0.5px solid var(--separator);border-radius:14px;margin:0 auto 6px"></div>
+          <div class="mono" style="font-size:11px;color:var(--label-secondary)">r.lg · 14</div>
+          <div class="micro">overlay · cards</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:60px;height:60px;background:var(--fill);border:0.5px solid var(--separator);border-radius:18px;margin:0 auto 6px"></div>
+          <div class="mono" style="font-size:11px;color:var(--label-secondary)">r.xl · 18</div>
+          <div class="micro">sheets</div>
+        </div>
+        <div style="text-align:center">
+          <div style="width:60px;height:60px;background:var(--fill);border:0.5px solid var(--separator);border-radius:999px;margin:0 auto 6px"></div>
+          <div class="mono" style="font-size:11px;color:var(--label-secondary)">r.full</div>
+          <div class="micro">chips · pills</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── 07 COMPONENTS ─────────────────────────────────────────────────── -->
+<section id="components">
+  <header>
+    <div>
+      <h2>07 — Components</h2>
+      <h3>Atomic pieces. Composable.</h3>
+    </div>
+    <p class="desc">Every overlay state is built from these primitives. Each ships as a SwiftUI view with documented props; Storybook-equivalent fixtures live under <code class="mono">SpeedyKit/Previews/</code>.</p>
+  </header>
+
+  <!-- Buttons -->
+  <div class="card">
+    <div class="card-head"><span>Buttons</span><span>5 variants · 3 sizes</span></div>
+    <div class="preview compact" style="gap:10px;flex-wrap:wrap">
+      <button class="btn primary">Primary</button>
+      <button class="btn secondary">Secondary</button>
+      <button class="btn green">Buy</button>
+      <button class="btn red">Sell</button>
+      <button class="btn ghost">Ghost</button>
+    </div>
+    <div class="preview compact" style="gap:10px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn lg primary">Buy Yes · $100 <span style="opacity:0.55">⌘⏎</span></button>
+      <button class="btn primary">Confirm</button>
+      <button class="btn sm primary">$25</button>
+    </div>
+    <pre class="code" style="margin-top:14px"><span class="t">SpeedyButton</span>(<span class="s">"Buy Yes"</span>, style: .primary, size: .large) { submit() }
+    .keyboardShortcut(.return, modifiers: .command)</pre>
+  </div>
+
+  <!-- Segmented / side selector -->
+  <div class="grid grid-2" style="margin-top:16px">
+    <div class="card">
+      <div class="card-head"><span>Segmented · neutral</span></div>
+      <div class="preview compact"><div class="seg" style="width:240px"><button class="on">Auto</button><button>Pred</button><button>Stocks</button><button>Perps</button></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>Side selector · bold (Y/N or Buy/Sell)</span></div>
+      <div class="preview compact"><div class="seg bold" style="width:240px"><button class="on green">Yes 62¢</button><button>No 38¢</button></div></div>
+    </div>
+  </div>
+
+  <!-- Inputs -->
+  <div class="grid grid-2" style="margin-top:16px">
+    <div class="card">
+      <div class="card-head"><span>Currency field</span></div>
+      <div class="preview compact" style="flex-direction:column;align-items:stretch;gap:8px;max-width:240px;margin:0 auto">
+        <div class="field"><span class="prefix">$</span><input value="100" readonly/></div>
+        <div style="display:flex;gap:4px">
+          <button class="btn sm secondary" style="flex:1">$25</button>
+          <button class="btn sm secondary" style="flex:1;background:var(--label);color:var(--bg-system)">$100</button>
+          <button class="btn sm secondary" style="flex:1">$500</button>
+          <button class="btn sm secondary" style="flex:1">$1k</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>Keyboard shortcut display</span></div>
+      <div class="preview compact" style="gap:10px;flex-wrap:wrap">
+        <span class="kbd">⌃</span><span class="kbd">Space</span>
+        <span style="color:var(--label-tertiary);margin:0 4px">·</span>
+        <span class="kbd">⌘</span><span class="kbd">⏎</span>
+        <span style="color:var(--label-tertiary);margin:0 4px">·</span>
+        <span class="kbd">esc</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Badges & pills -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-head"><span>Badges · market types & status</span></div>
+    <div class="preview compact" style="gap:10px;flex-wrap:wrap">
+      <span class="market-badge mb-pred">PRED</span>
+      <span class="market-badge mb-stock">STOCK</span>
+      <span class="market-badge mb-perp">PERP</span>
+      <span class="market-badge mb-comm">COMM</span>
+      <span style="width:14px"></span>
+      <span class="pill brand">SPEEDY</span>
+      <span class="pill green">▲ +2.62%</span>
+      <span class="pill red">▼ -1.24%</span>
+      <span class="pill neutral">Polymarket</span>
+    </div>
+  </div>
+
+  <!-- Match excerpt -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-head"><span>Match excerpt</span><span>trust signal</span></div>
+    <div class="preview compact" style="gap:10px;flex-wrap:wrap">
+      <span class="excerpt">"…May rate cut…"</span>
+      <span class="excerpt">"…Bitcoin pushed back through $71,000…"</span>
+      <span class="excerpt">"…gold extended its run…"</span>
+    </div>
+    <div class="note" style="margin-top:14px">Shows the fragment of selected text that drove the match. Truncates with ellipsis on either end. <b>Decision pending</b> — could be removed for a denser overlay, but eats only 22pt of vertical space and earns trust on every interaction.</div>
+  </div>
+</section>
+
+<!-- ─── 08 OVERLAY ANATOMY ────────────────────────────────────────────── -->
+<section id="overlay">
+  <header>
+    <div>
+      <h2>08 — Trade overlay</h2>
+      <h3>320pt of frictionless trade.</h3>
+    </div>
+    <p class="desc">The overlay is fixed at 320pt wide. Variable height — minimum 248pt (entry), grows for swap dropdown, shrinks for confirm/done. Anchors to the bottom-right of the cursor at <code class="mono">mouseUp</code>; flips horizontally if it would clip the screen edge.</p>
+  </header>
+
+  <div class="anatomy">
+    <div class="stage">
+      <div class="overlay" style="width:320px">
+        <div class="ov-row tight" style="display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="speedy-tile sm"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg></span>
+            <span class="mono" style="font-size:10px;color:var(--label-tertiary);letter-spacing:0.06em">SPEEDY</span>
+          </div>
+          <span class="mono" style="font-size:9.5px;color:var(--label-quaternary)">⌘⏎ confirm · esc</span>
+        </div>
+        <div class="ov-row">
+          <div class="between" style="margin-bottom:6px">
+            <div style="display:flex;gap:6px;align-items:center">
+              <span class="market-badge mb-pred">PRED</span>
+              <span class="mono" style="font-size:10px;color:var(--label-tertiary);letter-spacing:0.04em">POLYMARKET</span>
+            </div>
+            <span class="excerpt">"…May rate cut…"</span>
+          </div>
+          <div style="font-weight:600;font-size:14px;line-height:1.3;margin-bottom:8px">Fed cuts rates at May 7 meeting?</div>
+          <div style="display:flex;align-items:baseline;gap:10px;font-family:'JetBrains Mono',monospace">
+            <span style="font-size:24px;font-weight:600;letter-spacing:-0.015em">62¢</span>
+            <span style="font-size:11.5px;color:var(--green)">▲ 4¢</span>
+            <span style="font-size:10.5px;color:var(--label-tertiary);margin-left:auto">vol $8.4M</span>
+          </div>
+        </div>
+        <div class="ov-row">
+          <div class="seg bold" style="margin-bottom:10px"><button class="on green">Yes 62¢</button><button>No 38¢</button></div>
+          <div class="between" style="margin-bottom:6px"><span class="micro">Size</span><span class="mono" style="font-size:11px;color:var(--label-tertiary)">≈ 161.29 shares</span></div>
+          <div class="field" style="margin-bottom:6px"><span class="prefix">$</span><input value="100" readonly/></div>
+          <div style="display:flex;gap:4px;margin-bottom:10px">
+            <button class="btn sm secondary" style="flex:1">$25</button>
+            <button class="btn sm secondary" style="flex:1;background:var(--label);color:var(--bg-system)">$100</button>
+            <button class="btn sm secondary" style="flex:1">$500</button>
+            <button class="btn sm secondary" style="flex:1">$1k</button>
+          </div>
+          <button class="btn lg green" style="width:100%">Buy Yes · $100 <span style="opacity:0.55">⌘⏎</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-3" style="margin-top:24px">
+    <div class="card">
+      <div class="card-head"><span>State · entry</span><span class="mono">default</span></div>
+      <p style="font-size:13px;color:var(--label-secondary);margin:0">User has highlighted, hotkey held, market matched. All controls active. <code class="mono">⌘⏎</code> submits.</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>State · routing</span><span class="mono">700ms</span></div>
+      <p style="font-size:13px;color:var(--label-secondary);margin:0">Optimistic — overlay swaps to a centered spinner with caption "routing order". Cancellable with <code class="mono">esc</code> for the first 300ms (window before order leaves the wire).</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>State · filled</span><span class="mono">2s</span></div>
+      <p style="font-size:13px;color:var(--label-secondary);margin:0">Green check, summary line, auto-dismiss after 2s. Click to keep open and view receipt.</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Anchor logic.</b> The overlay's top-left anchors at <code class="mono">(mouseUp.x + 8, mouseUp.y + 12)</code>. If <code class="mono">x + 320 &gt; screenBounds.maxX - 16</code>, flip to <code class="mono">(mouseUp.x - 320 - 8, …)</code>. If <code class="mono">y + height &gt; screenBounds.maxY - 16</code>, anchor above the cursor instead. Never clips, never scrolls.
+  </div>
+</section>
+
+<!-- ─── 09 MOTION ─────────────────────────────────────────────────────── -->
+<section id="motion">
+  <header>
+    <div>
+      <h2>09 — Motion</h2>
+      <h3>80–180ms ease-out. No bounce.</h3>
+    </div>
+    <p class="desc">Trader tools should not feel like games. Springs add ambiguity about "is the action committed?" Linear ease-out of 80–180ms is fast enough to feel instant, slow enough to be perceived, and unambiguous about commit timing.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-head"><span>Duration tokens</span></div>
+    <div class="motion-row">
+      <span class="mono" style="font-size:12px;color:var(--label-secondary)">t.fast</span>
+      <div class="track"><div class="bar" style="width:60px;animation:demoFast 1.6s var(--ease) infinite"></div></div>
+      <span class="mono" style="font-size:11px;color:var(--label-tertiary);text-align:right">80ms</span>
+    </div>
+    <div class="motion-row">
+      <span class="mono" style="font-size:12px;color:var(--label-secondary)">t.base</span>
+      <div class="track"><div class="bar" style="width:60px;animation:demoBase 1.6s var(--ease) infinite"></div></div>
+      <span class="mono" style="font-size:11px;color:var(--label-tertiary);text-align:right">120ms</span>
+    </div>
+    <div class="motion-row">
+      <span class="mono" style="font-size:12px;color:var(--label-secondary)">t.slow</span>
+      <div class="track"><div class="bar" style="width:60px;animation:demoSlow 1.6s var(--ease) infinite"></div></div>
+      <span class="mono" style="font-size:11px;color:var(--label-tertiary);text-align:right">180ms</span>
+    </div>
+  </div>
+
+  <style>
+    @keyframes demoFast{0%{left:6px}50%{left:calc(100% - 66px)}100%{left:6px}}
+    @keyframes demoBase{0%{left:6px}50%{left:calc(100% - 66px)}100%{left:6px}}
+    @keyframes demoSlow{0%{left:6px}50%{left:calc(100% - 66px)}100%{left:6px}}
+    .motion-row:nth-child(2) .bar{animation-duration:0.16s !important;animation-timing-function:cubic-bezier(0.2,0,0,1)}
+    .motion-row:nth-child(3) .bar{animation-duration:0.24s !important;animation-timing-function:cubic-bezier(0.2,0,0,1)}
+    .motion-row:nth-child(4) .bar{animation-duration:0.36s !important;animation-timing-function:cubic-bezier(0.2,0,0,1)}
+  </style>
+
+  <div class="grid grid-2" style="margin-top:16px">
+    <div class="card">
+      <div class="card-head"><span>Where each duration applies</span></div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <tr><td style="padding:6px 0;color:var(--label-secondary)" class="mono">t.fast · 80ms</td><td>button hover · seg thumb · kbd press</td></tr>
+        <tr><td style="padding:6px 0;color:var(--label-secondary);border-top:0.5px solid var(--separator)" class="mono">t.base · 120ms</td><td style="border-top:0.5px solid var(--separator)">overlay show/hide · pill armed flash</td></tr>
+        <tr><td style="padding:6px 0;color:var(--label-secondary);border-top:0.5px solid var(--separator)" class="mono">t.slow · 180ms</td><td style="border-top:0.5px solid var(--separator)">state transitions (entry → routing → filled)</td></tr>
+        <tr><td style="padding:6px 0;color:var(--label-secondary);border-top:0.5px solid var(--separator)" class="mono">linear · 700ms</td><td style="border-top:0.5px solid var(--separator)">spinner rotation only</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>SwiftUI · animation</span></div>
+      <pre class="code"><span class="k">extension</span> <span class="t">Animation</span> {
+    <span class="k">static let</span> speedyFast = .easeOut(duration: <span class="n">0.08</span>)
+    <span class="k">static let</span> speedyBase = .easeOut(duration: <span class="n">0.12</span>)
+    <span class="k">static let</span> speedySlow = .easeOut(duration: <span class="n">0.18</span>)
+}
+
+<span class="c">// Usage</span>
+.animation(.speedyBase, value: isVisible)
+
+<span class="c">// Reduce Motion → all become .linear(duration: 0)</span></pre>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>No spring. Period.</b> Reject any <code class="mono">.spring()</code>, <code class="mono">.bouncy</code>, or <code class="mono">.smooth</code> in code review. The only allowed easing is <code class="mono">.easeOut</code> with the three durations above. Spinners use <code class="mono">.linear</code>. That's the entire motion vocabulary.
+  </div>
+</section>
+
+<!-- ─── 10 A11Y ───────────────────────────────────────────────────────── -->
+<section id="a11y">
+  <header>
+    <div>
+      <h2>10 — Accessibility</h2>
+      <h3>Trades require precision. Precision requires accessibility.</h3>
+    </div>
+  </header>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-head"><span>System settings respected</span></div>
+      <ul style="margin:0;padding-left:18px;font-size:13.5px;color:var(--label-secondary);line-height:1.7">
+        <li><b style="color:var(--label)">Reduce Transparency</b> → material falls back to <code class="mono">bg.elevated</code> with separator border</li>
+        <li><b style="color:var(--label)">Reduce Motion</b> → all easing becomes <code class="mono">duration: 0</code>. Spinner becomes a static caption.</li>
+        <li><b style="color:var(--label)">Increase Contrast</b> → labels switch to α 100% / α 80% / α 60% tier; separator opacity doubles</li>
+        <li><b style="color:var(--label)">Differentiate Without Color</b> → side selector adds ▲/▼ glyph; price changes annotated with arrows</li>
+        <li><b style="color:var(--label)">Larger Text</b> → labels and buttons scale; price stays fixed (always-readable)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>Keyboard model</span></div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <tr><td style="padding:6px 0"><span class="kbd">⌃</span> <span style="color:var(--label-tertiary)">held</span></td><td style="color:var(--label-secondary)">arms Speedy on next selection</td></tr>
+        <tr><td style="padding:6px 0;border-top:0.5px solid var(--separator)"><span class="kbd">⌃</span><span class="kbd">Space</span></td><td style="border-top:0.5px solid var(--separator);color:var(--label-secondary)">arm/disarm toggle</td></tr>
+        <tr><td style="padding:6px 0;border-top:0.5px solid var(--separator)"><span class="kbd">tab</span></td><td style="border-top:0.5px solid var(--separator);color:var(--label-secondary)">cycle through size presets</td></tr>
+        <tr><td style="padding:6px 0;border-top:0.5px solid var(--separator)"><span class="kbd">b</span> / <span class="kbd">s</span></td><td style="border-top:0.5px solid var(--separator);color:var(--label-secondary)">switch buy/sell (or yes/no)</td></tr>
+        <tr><td style="padding:6px 0;border-top:0.5px solid var(--separator)"><span class="kbd">⌘</span><span class="kbd">⏎</span></td><td style="border-top:0.5px solid var(--separator);color:var(--label-secondary)">submit order</td></tr>
+        <tr><td style="padding:6px 0;border-top:0.5px solid var(--separator)"><span class="kbd">esc</span></td><td style="border-top:0.5px solid var(--separator);color:var(--label-secondary)">dismiss / cancel within window</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>VoiceOver</span></div>
+      <ul style="margin:0;padding-left:18px;font-size:13.5px;color:var(--label-secondary);line-height:1.7">
+        <li>Overlay announces as: "<i>Speedy. Match: Polymarket prediction. Fed cuts rates at May 7 meeting. Yes 62 cents, up 4 cents.</i>"</li>
+        <li>Buy button announces: "<i>Buy Yes for 100 dollars. Activate to submit. Command-Return.</i>"</li>
+        <li>Match excerpt is exposed as <code class="mono">accessibilityLabel</code> = "matched from quote: …"</li>
+        <li>State changes (routing, filled) post <code class="mono">.announcement</code> notifications.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-head"><span>Touch / cursor targets</span></div>
+      <p style="margin:0;font-size:13.5px;color:var(--label-secondary);line-height:1.6">Minimum cursor target: 28×28 pt (buttons, segmented cells). Minimum tap target if Speedy ships on iPad: 44×44 pt. Spacing between actionable elements ≥ 4pt.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── 11 VOICE ──────────────────────────────────────────────────────── -->
+<section id="voice">
+  <header>
+    <div>
+      <h2>11 — Voice & copy</h2>
+      <h3>Terse. Unambiguous. Never cute.</h3>
+    </div>
+    <p class="desc">Speedy is in the path of money. Every label needs to be defensible the moment a trade goes wrong. No emoji. No clever metaphors. Read like a Bloomberg terminal mixed with a stopwatch.</p>
+  </header>
+
+  <div class="pair">
+    <div class="card">
+      <span class="badge-good">DO</span>
+      <div class="micro" style="margin-bottom:8px">CONFIRMATION</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">Buy Yes · $100</div>
+      <div style="font-size:12px;color:var(--label-secondary)">Filled at 62¢ · 161.29 shares · Polymarket · 3:42 PM</div>
+    </div>
+    <div class="card">
+      <span class="badge-bad">DON'T</span>
+      <div class="micro" style="margin-bottom:8px">CONFIRMATION</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">🎉 You're in!</div>
+      <div style="font-size:12px;color:var(--label-secondary)">Just placed your $100 bet on the Fed cut!</div>
+    </div>
+  </div>
+
+  <div class="pair" style="margin-top:16px">
+    <div class="card">
+      <span class="badge-good">DO</span>
+      <div class="micro" style="margin-bottom:8px">EMPTY MATCH</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">No market match</div>
+      <div style="font-size:12px;color:var(--label-secondary)">Try a ticker, asset name, or event phrase.</div>
+    </div>
+    <div class="card">
+      <span class="badge-bad">DON'T</span>
+      <div class="micro" style="margin-bottom:8px">EMPTY MATCH</div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">Hmm, we couldn't find anything!</div>
+      <div style="font-size:12px;color:var(--label-secondary)">Don't worry — try selecting something else 👀</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-head"><span>Glossary · canonical terms</span></div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <tr><td style="padding:6px 0;color:var(--label-secondary);width:160px" class="mono">arm / armed</td><td>Speedy is listening for a selection. Hotkey held or toggled.</td></tr>
+      <tr><td style="padding:6px 0;color:var(--label-secondary);border-top:0.5px solid var(--separator)" class="mono">match</td><td style="border-top:0.5px solid var(--separator)">A tradable market identified from selected text.</td></tr>
+      <tr><td style="padding:6px 0;color:var(--label-secondary);border-top:0.5px solid var(--separator)" class="mono">overlay</td><td style="border-top:0.5px solid var(--separator)">The 320pt panel containing the trade UI. Not "popup," not "modal."</td></tr>
+      <tr><td style="padding:6px 0;color:var(--label-secondary);border-top:0.5px solid var(--separator)" class="mono">excerpt</td><td style="border-top:0.5px solid var(--separator)">The selected text fragment shown in the overlay header.</td></tr>
+      <tr><td style="padding:6px 0;color:var(--label-secondary);border-top:0.5px solid var(--separator)" class="mono">venue</td><td style="border-top:0.5px solid var(--separator)">The market source (Polymarket, NYSE, Hyperliquid, etc.). Always shown.</td></tr>
+      <tr><td style="padding:6px 0;color:var(--label-secondary);border-top:0.5px solid var(--separator)" class="mono">fill</td><td style="border-top:0.5px solid var(--separator)">An executed order. "Filled at 62¢," not "Bought at 62¢."</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ─── 12 DOS / DONTS ────────────────────────────────────────────────── -->
+<section id="donts">
+  <header>
+    <div>
+      <h2>12 — Do / Don't</h2>
+      <h3>Edge cases the design system has opinions about.</h3>
+    </div>
+  </header>
+
+  <div class="pair">
+    <div class="card">
+      <span class="badge-good">DO</span>
+      <div class="micro" style="margin-bottom:10px">PRICE DISPLAY</div>
+      <div class="mono" style="font-size:24px;font-weight:600">$71,240.00</div>
+      <p style="font-size:12px;color:var(--label-secondary);margin:6px 0 0">Tabular figures. Same width on every digit. No jitter on tick.</p>
+    </div>
+    <div class="card">
+      <span class="badge-bad">DON'T</span>
+      <div class="micro" style="margin-bottom:10px">PRICE DISPLAY</div>
+      <div style="font-family:'Inter',sans-serif;font-size:24px;font-weight:600">$71,240.00</div>
+      <p style="font-size:12px;color:var(--label-secondary);margin:6px 0 0">Proportional figures. The "1" is narrower than the "0". Layout reflows on every tick.</p>
+    </div>
+  </div>
+
+  <div class="pair" style="margin-top:16px">
+    <div class="card">
+      <span class="badge-good">DO</span>
+      <div class="micro" style="margin-bottom:10px">SUBMIT BUTTON</div>
+      <button class="btn lg green" style="width:100%">Buy Yes · $100 <span style="opacity:0.55">⌘⏎</span></button>
+      <p style="font-size:12px;color:var(--label-secondary);margin:10px 0 0">States the action, the size, and the shortcut. No mystery.</p>
+    </div>
+    <div class="card">
+      <span class="badge-bad">DON'T</span>
+      <div class="micro" style="margin-bottom:10px">SUBMIT BUTTON</div>
+      <button class="btn lg primary" style="width:100%">Confirm</button>
+      <p style="font-size:12px;color:var(--label-secondary);margin:10px 0 0">"Confirm" doesn't tell the user what they're confirming. Use the verb + amount.</p>
+    </div>
+  </div>
+
+  <div class="pair" style="margin-top:16px">
+    <div class="card">
+      <span class="badge-good">DO</span>
+      <div class="micro" style="margin-bottom:10px">OVERLAY ENTRANCE</div>
+      <div style="font-size:13px;color:var(--label-secondary);line-height:1.5">120ms ease-out, opacity 0→1, translateY 4pt → 0. Predictable commit timing.</div>
+    </div>
+    <div class="card">
+      <span class="badge-bad">DON'T</span>
+      <div class="micro" style="margin-bottom:10px">OVERLAY ENTRANCE</div>
+      <div style="font-size:13px;color:var(--label-secondary);line-height:1.5">300ms spring(damping: 0.6). Bouncing into a trade UI is a usability anti-pattern.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="speedy-tile sm"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M14 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#fff"/></svg></span>
+    <span>Speedy · Design System v0.1</span>
+  </div>
+  <span class="mono">Last updated 2026-04-25 · owners: design + ios</span>
+</footer>
+
+</div><!-- /right -->
+</div><!-- /doc-grid -->
+
+</div><!-- /page -->
+
+</body>
+</html>

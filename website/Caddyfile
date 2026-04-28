@@ -1,0 +1,16 @@
+{
+	# Railway terminates TLS at the edge; Caddy serves plain HTTP behind it.
+	auto_https off
+	# No need for the admin API.
+	admin off
+}
+
+# Hardcoded :8080 (matches EXPOSE in the Dockerfile and the Target Port we
+# set in Railway → Settings → Networking). Avoids the $PORT-substitution
+# guessing game; static sites have no reason to be port-flexible.
+:8080 {
+	log
+	root * /srv
+	encode gzip
+	file_server
+}

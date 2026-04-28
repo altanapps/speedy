@@ -61,3 +61,21 @@ class Market(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+
+class WaitlistSignup(Base):
+    """Email signups from the marketing page (getspeedy.app).
+
+    Email is unique and lowercased at write time so duplicate submits are
+    no-ops. Position in line == primary key (autoincrement = signup order).
+    Referrer is optional — the page or campaign that drove the signup.
+    """
+
+    __tablename__ = "waitlist_signups"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    referrer: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
