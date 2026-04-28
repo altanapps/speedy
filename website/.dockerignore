@@ -1,5 +1,1 @@
-# Don't ship build-only files as static assets at the resulting URLs.
-Dockerfile
-Caddyfile
-.dockerignore
 .DS_Store
