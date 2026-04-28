@@ -156,14 +156,12 @@
   }
   .brand{display:flex;align-items:center;gap:9px}
   .mark{
-    /* Gradient + bolt are baked into mark-64.png; we just clip to the squircle
-       shape and add the outer purple glow. */
     width:24px;height:24px;border-radius:7px;
-    overflow:hidden;
-    box-shadow:0 2px 8px rgba(124,92,255,0.30);
+    background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 8px rgba(124,92,255,0.30);
     transform:rotate(-2deg);
   }
-  .mark img{width:100%;height:100%;display:block}
   .brand-name{
     font-family:var(--serif);
     font-weight:600;font-size:18px;letter-spacing:-0.02em;
@@ -748,7 +746,9 @@
 <div class="topbar">
   <div class="brand">
     <div class="mark">
-      <img src="/mark-64.png" alt="" width="24" height="24"/>
+      <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
+        <path d="M6.5 0L0 7.5h4L3 13l7.5-7.5h-4L7.5 0z" fill="#fafaf7"/>
+      </svg>
     </div>
     <span class="brand-name">Speedy</span>
     <span class="brand-beta">PRIVATE BETA</span>
