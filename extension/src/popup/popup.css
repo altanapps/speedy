@@ -1,0 +1,116 @@
+/* Phase 1 popup. Tokens copied verbatim from
+ * macos/Sources/Speedy/Overlay/SpeedyTokens.swift — full design-system port
+ * lands when the overlay component does (step 5). */
+:root {
+  color-scheme: dark;
+  --bg-system: #0b0b0e;
+  --bg-elevated: #18181c;
+  --label: rgba(255, 255, 255, 0.96);
+  --label-secondary: rgba(255, 255, 255, 0.62);
+  --label-tertiary: rgba(255, 255, 255, 0.4);
+  --separator: rgba(255, 255, 255, 0.08);
+  --purple: #7c5cff;
+  --green: #30d158;
+  --red: #ff453a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-system);
+  color: var(--label);
+}
+
+.popup {
+  padding: 16px;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+h1 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--purple);
+  letter-spacing: -0.01em;
+}
+
+.version {
+  font-size: 11px;
+  color: var(--label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tagline {
+  font-size: 12px;
+  color: var(--label-secondary);
+  margin: 0 0 16px;
+}
+
+.status {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 12px;
+  row-gap: 6px;
+  margin: 0;
+  padding: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator);
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.status dt {
+  color: var(--label-secondary);
+}
+
+.status dd {
+  margin: 0;
+  color: var(--label);
+}
+
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.status-ok {
+  color: var(--green);
+}
+
+.status-unreachable {
+  color: var(--red);
+}
+
+.status-checking {
+  color: var(--label-tertiary);
+}
+
+.hint {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: var(--label-secondary);
+  line-height: 1.45;
+}
+
+code {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}

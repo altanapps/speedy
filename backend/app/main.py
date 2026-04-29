@@ -25,6 +25,13 @@ _DEFAULT_CORS_ORIGINS = (
     "http://localhost:8080",
 )
 
+# The browser-extension client runs in a `chrome-extension://<id>` origin.
+# The id is regenerated on every unpacked load during dev and fixed once
+# the extension ships, so allowlist via regex rather than enumerating ids.
+# Tighter than `*` (no other browsers, no http origins) but flexible enough
+# to cover dev + prod with no env override.
+_BROWSER_EXTENSION_ORIGIN_REGEX = r"^chrome-extension://[a-z0-9]+$"
+
 
 def _allowed_origins() -> list[str]:
     raw = os.environ.get("SPEEDY_CORS_ALLOWED_ORIGINS", "").strip()
@@ -54,6 +61,7 @@ app = FastAPI(title="Speedy", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins(),
+    allow_origin_regex=_BROWSER_EXTENSION_ORIGIN_REGEX,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
